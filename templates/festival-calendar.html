@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Festival Calendar</title>
+  <style>
+    /* Hide Webflow badge */
+    .w-webflow-badge { display: none !important; }
+
+    :root {
+      --bg: #f3e3cf;
+      --fg: #4b3124;
+      --accent: #D4A574;
+      --btn-bg: rgba(62,39,35,.9);
+      --btn-fg: #F1E7D3;
+      --shadow: 0 14px 32px rgba(62,39,35,.22);
+      /* Added: transition + visual vars used in CSS */
+      --dur: .55s;
+      --easing: cubic-bezier(.22,.97,.36,1);
+      --radius: 18px;
+      --ring: rgba(62,39,35,.26);
+      --shadow-strong: 0 16px 42px rgba(62,39,35,.36);
+    }
+
+    /* Hide scrollbar */
+    html {
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* Internet Explorer 10+ */
+    }
+    
+    html::-webkit-scrollbar {
+      width: 0;
+      background: transparent; /* Chrome/Safari/Webkit */
+    }
+
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      /* Background image for the calendar page with a fallback */
+      background:
+        url("/static/calendar/festival bg.png") top center / cover no-repeat fixed,
+        var(--bg);
+      color: var(--fg);
+      font-family: Georgia, Garamond, "Times New Roman", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+      opacity: 1;
+      transition: opacity 0.8s ease;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      /* Disable background drift to avoid shifting/cropping of the BG title */
+      /* animation: bgDrift 28s ease-in-out infinite alternate; */
+    }
+
+    @keyframes bgDrift {
+      0%   { background-position: 50% 50%, center, center; }
+      50%  { background-position: 48% 52%, center, center; }
+      100% { background-position: 50% 50%, center, center; }
+    }
+
+    /* Retro grain + vignette overlays */
+    body::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(120% 100% at 50% 20%, rgba(0,0,0,.08) 0%, rgba(0,0,0,.06) 35%, rgba(0,0,0,0) 60%) ,
+        radial-gradient(100% 120% at 50% 120%, rgba(0,0,0,.22) 10%, rgba(0,0,0,.12) 30%, rgba(0,0,0,0) 55%);
+      mix-blend-mode: multiply;
+    }
+
+    /* Root layout */
+    .cal-root {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      align-items: center;
+      justify-items: center;
+      overflow: hidden;
+      /* Reserve top area for the title inside the background image */
+      padding: clamp(10vh, 14vh, 18vh) 20px 96px;
+      box-sizing: border-box;
+    }
+
+    /* Stage holding two layers for crossfade/slide */
+    .cal-stage {
+      position: relative;
+      /* Size is set dynamically via JS to fit image fully */
+      width: 820px;  /* initial fallback, will be overridden */
+      height: 560px; /* initial fallback, will be overridden */
+      max-width: min(1200px, 96vw);
+      max-height: 82vh;
+      border-radius: var(--radius);
+      border: 2px solid rgba(75,49,36,.6);
+      box-shadow: var(--shadow), inset 0 0 0 10px rgba(255,248,230,.22), inset 0 0 120px rgba(84,60,40,.16);
+      background: rgba(255,255,255,.34);
+      backdrop-filter: blur(1px);
+      overflow: hidden;
+    }
+    .cal-stage::before {
+      content: "";
+      position: absolute; inset: 0; pointer-events: none; z-index: 1;
+      background:
+        repeating-linear-gradient( 0deg, rgba(255,255,255,.06) 0, rgba(255,255,255,.06) 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        radial-gradient( 1200px 800px at 10% 10%, rgba(255,255,255,.06), rgba(255,255,255,0) 60%);
+      mix-blend-mode: multiply;
+    }
+
+    .cal-slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      transform: translateX(16%);
+      transition: opacity var(--dur) ease, transform var(--dur) var(--easing);
+      will-change: transform, opacity;
+    }
+    .cal-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* ensure full image without cropping */
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      filter: drop-shadow(0 12px 24px rgba(0,0,0,.08));
+    }
+    .cal-slide.active { opacity: 1; transform: translateX(0); z-index: 2; }
+    .cal-slide.to-left { opacity: 0; transform: translateX(-16%); }
+    .cal-slide.to-right { opacity: 0; transform: translateX(16%); }
+    .cal-slide.from-left { transform: translateX(-16%); }
+    .cal-slide.from-right { transform: translateX(16%); }
+
+    /* Mobile tweak: push content a bit further down */
+    @media (max-width: 768px) {
+      .cal-root {
+        padding-top: 22vh;
+      }
+    }
+
+    /* Bottom nav */
+    .cal-nav {
+      position: absolute;
+      left: 0; right: 0; bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      pointer-events: none; /* allow only buttons to capture */
+    }
+    .cal-btn {
+      pointer-events: auto;
+      width: 52px; height: 52px;
+      border-radius: 999px;
+      border: 3px solid #fff;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 28px var(--ring);
+      cursor: pointer;
+      transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+    }
+    .cal-btn:disabled, .cal-btn[hidden] { opacity: .45; cursor: default; display: none; }
+    .cal-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-strong); }
+    .cal-btn svg { display: block; }
+
+    /* Plan My Trip button in nav */
+    .plan-btn {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: 3px solid #fff;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 10px 28px var(--ring);
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
+      margin-left: 4px; /* slight extra spacing after arrows */
+      -webkit-font-smoothing: antialiased;
+    }
+    .plan-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-strong); }
+    .plan-btn svg { display: block; }
+
+    /* Month label */
+    .cal-label {
+      position: absolute;
+      top: 18px; left: 22px;
+      padding: 6px 10px;
+      background: rgba(62,39,35,.76);
+      color: #F1E7D3;
+      border-radius: 10px;
+      font-size: 13px;
+      letter-spacing: .4px;
+      box-shadow: 0 8px 18px rgba(62,39,35,.24);
+      user-select: none;
+    }
+
+    /* Page Title */
+    .cal-title {
+      position: absolute;
+      top: 12px;
+      left: 0; right: 0;
+      text-align: center;
+      margin: 0;
+      font-size: clamp(22px, 3.2vw, 36px);
+      line-height: 1.1;
+      color: var(--fg);              /* dark brown fill */
+      -webkit-text-stroke: 2px #ffffff; /* white outline */
+      text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff; /* broader support */
+      z-index: 5;
+      user-select: none;
+      pointer-events: none;
+    }
+    .cal-title::after {
+      content: "";
+      display: block;
+      width: clamp(120px, 24vw, 260px);
+      height: 6px; margin: 8px auto 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(75,49,36,.25), rgba(75,49,36,.8), rgba(75,49,36,.25));
+      filter: blur(.2px);
+    }
+
+    /* Embedded continuous sections (timeline, about) */
+    .embed-stack { width: 100%; max-width: none; margin: clamp(14px, 1.5vh, 22px) 0 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+    .embed-frame {
+      width: 100%; border: 0; display: block; background: transparent; height: 1px; min-height: 300px;
+      opacity: 0; transform: translateY(10px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+    .embed-frame.loaded { opacity: 1; transform: none; }
+    .embed-divider { height: clamp(14px, 2.2vh, 28px); }
+    /* Stagger the second iframe's fade slightly */
+    #if-timeline { transition-delay: .04s; }
+    #if-about { transition-delay: .12s; }
+  </style>
+</head>
+<body>
+  <div class="cal-root">
+    <div class="cal-stage" role="region" aria-label="Festival calendar viewer">
+      <div class="cal-label" id="cal-label">January</div>
+      <div class="cal-slide cal-slide-a active">
+        <img id="img-a" src="/static/calendar/1.png" alt="January" draggable="false" />
+      </div>
+      <div class="cal-slide cal-slide-b">
+        <img id="img-b" src="" alt="" draggable="false" />
+      </div>
+    </div>
+
+    <div class="cal-nav">
+      <button class="cal-btn prev" id="btn-prev" aria-label="Previous month" title="Previous">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="cal-btn next" id="btn-next" aria-label="Next month" title="Next">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <a class="plan-btn" id="btn-plan" href="/trip-planner" aria-label="Plan My Trip" title="Plan My Trip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="10,9 9,9 8,9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Plan My Trip</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Continuous next sections: Timeline and About embedded -->
+  <section class="embed-stack" aria-label="Timeline and About">
+    <iframe id="if-timeline" class="embed-frame" src="/timeline?embed=1" title="Kerala Timeline" scrolling="no"></iframe>
+    <div class="embed-divider"></div>
+    <iframe id="if-about" class="embed-frame" src="/about?embed=1" title="About" scrolling="no"></iframe>
+  </section>
+
+  <script>
+    // Detect embedded mode via URL param
+    const __params = new URLSearchParams(window.location.search);
+    const __isEmbed = __params.get('embed') === '1';
+
+    (function(){
+      const months = Array.from({length: 12}, (_, i) => `/static/calendar/${i+1}.png`);
+      const monthNames = [
+        'January','February','March','April','May','June','July','August','September','October','November','December'
+      ];
+
+      const stage = document.querySelector('.cal-stage');
+      const label = document.getElementById('cal-label');
+      const prevBtn = document.getElementById('btn-prev');
+      const nextBtn = document.getElementById('btn-next');
+
+      const a = document.querySelector('.cal-slide-a');
+      const b = document.querySelector('.cal-slide-b');
+      const imgA = document.getElementById('img-a');
+      const imgB = document.getElementById('img-b');
+
+      let index = 0; // 0..11
+      let showingA = true; // which slide is active
+      let animating = false;
+      let currentAspect = null; // natural width/height of current month
+
+      function applyStageSize() {
+        if (!currentAspect || !stage) return;
+        const titleEl = document.querySelector('.cal-title');
+        const navEl = document.querySelector('.cal-nav');
+        const titleH = titleEl ? Math.ceil(titleEl.getBoundingClientRect().height) : 0;
+        const navH = navEl ? Math.ceil(navEl.getBoundingClientRect().height) : 0;
+        const padX = 40; // left+right safety
+        const padY = 120; // headroom to keep background title visible
+        const vw = Math.max(320, window.innerWidth - padX);
+        const vh = Math.max(280, window.innerHeight - (titleH + navH + padY));
+        // Fit inside available area while preserving aspect
+        let width = Math.min(vw, vh * currentAspect, 1200); // allow larger max width
+        let height = Math.round(width / currentAspect);
+        // Ensure the stage isn't too tall
+        const maxH = Math.round(vh * 0.82);
+        if (height > vh) { height = vh; width = Math.round(height * currentAspect); }
+        if (height > maxH) { height = maxH; width = Math.round(height * currentAspect); }
+        stage.style.width = width + 'px';
+        stage.style.height = height + 'px';
+      }
+
+      function setAspectFrom(img) {
+        const nw = img.naturalWidth || 0;
+        const nh = img.naturalHeight || 0;
+        if (nw > 0 && nh > 0) {
+          currentAspect = nw / nh;
+          applyStageSize();
+        }
+      }
+
+      function updateButtons(){
+        if (index <= 0) {
+          prevBtn.hidden = true;
+        } else {
+          prevBtn.hidden = false;
+        }
+        if (index >= months.length - 1) {
+          nextBtn.hidden = true;
+        } else {
+          nextBtn.hidden = false;
+        }
+      }
+
+      function setLabel(){
+        label.textContent = monthNames[index];
+      }
+
+      function preload(src){
+        const i = new Image();
+        i.src = src;
+      }
+
+      function show(nextIndex, dir){
+        if (animating || nextIndex === index || nextIndex < 0 || nextIndex > 11) return;
+        animating = true;
+
+        const outgoing = showingA ? a : b;
+        const incoming = showingA ? b : a;
+        const outgoingImg = showingA ? imgA : imgB;
+        const incomingImg = showingA ? imgB : imgA;
+
+        // Prepare incoming
+        incoming.classList.remove('active','to-left','to-right','from-left','from-right');
+        outgoing.classList.remove('to-left','to-right','from-left','from-right');
+        incomingImg.src = months[nextIndex];
+        incomingImg.alt = monthNames[nextIndex];
+        label.textContent = monthNames[nextIndex];
+        // Size stage to the incoming image once it loads
+        if (incomingImg.complete) {
+          setAspectFrom(incomingImg);
+        } else {
+          incomingImg.addEventListener('load', () => setAspectFrom(incomingImg), { once: true });
+        }
+
+        // Directional classes
+        if (dir > 0) {
+          // next: incoming from right, outgoing to left
+          incoming.classList.add('from-right');
+        } else {
+          // prev: incoming from left, outgoing to right
+          incoming.classList.add('from-left');
+        }
+
+        // Force reflow to apply starting transform
+        // eslint-disable-next-line no-unused-expressions
+        incoming.offsetWidth;
+
+        // Animate
+        incoming.classList.add('active');
+        if (dir > 0) {
+          outgoing.classList.add('to-left');
+        } else {
+          outgoing.classList.add('to-right');
+        }
+
+        let fallbackTimer = null;
+        const onDone = () => {
+          outgoing.classList.remove('active','to-left','to-right','from-left','from-right');
+          incoming.classList.remove('from-left','from-right');
+          showingA = !showingA;
+          index = nextIndex;
+          updateButtons();
+          preload(months[Math.min(11, index+1)]);
+          preload(months[Math.max(0, index-1)]);
+          animating = false;
+          if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+          outgoing.removeEventListener('transitionend', onDone);
+        };
+        outgoing.addEventListener('transitionend', onDone, { once: true });
+
+        // Fallback: if transitionend doesn't fire (e.g., browser bug, display change), advance anyway
+        function parseMsList(str){
+          if (!str) return [0];
+          return str.split(',').map(s => {
+            s = s.trim();
+            if (s.endsWith('ms')) return parseFloat(s);
+            if (s.endsWith('s')) return parseFloat(s) * 1000;
+            const v = parseFloat(s); return isNaN(v) ? 0 : v;
+          });
+        }
+        const cs = getComputedStyle(outgoing);
+        const durs = parseMsList(cs.transitionDuration);
+        const dels = parseMsList(cs.transitionDelay);
+        let maxMs = 650; // default close to --dur
+        for (let i = 0; i < Math.max(durs.length, dels.length); i++) {
+          const dur = durs[i % durs.length] || 0;
+          const del = dels[i % dels.length] || 0;
+          maxMs = Math.max(maxMs, dur + del);
+        }
+        fallbackTimer = setTimeout(onDone, Math.ceil(maxMs + 60));
+      }
+
+      // Button events
+      prevBtn.addEventListener('click', () => show(index - 1, -1));
+      nextBtn.addEventListener('click', () => show(index + 1, +1));
+
+
+      // Keyboard support (optional)
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { nextBtn.click(); }
+        if (e.key === 'ArrowLeft') { prevBtn.click(); }
+      });
+
+      // Init
+      updateButtons();
+      setLabel();
+      // Ensure stage matches the first image's aspect
+      if (imgA.complete) {
+        setAspectFrom(imgA);
+      } else {
+        imgA.addEventListener('load', () => setAspectFrom(imgA), { once: true });
+      }
+      preload(months[1]);
+      // Resize on viewport changes
+      window.addEventListener('resize', applyStageSize);
+    })();
+
+    // Auto-size embedded iframes for continuous scroll experience
+    (function(){
+      function sizeIframe(iframe){
+        if (!iframe) return;
+        try {
+          const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+          if (!doc) return;
+          const body = doc.body;
+          const html = doc.documentElement;
+          const h = Math.max(body.scrollHeight, html.scrollHeight, body.offsetHeight, html.offsetHeight, body.clientHeight, html.clientHeight);
+          if (h && Math.abs(iframe.clientHeight - h) > 2) {
+            iframe.style.height = h + 'px';
+          }
+        } catch(e) { /* ignore cross-context issues */ }
+      }
+      function setup(id){
+        const f = document.getElementById(id);
+        if (!f) return;
+        const doSize = () => sizeIframe(f);
+        // Always try sizing immediately and with an early burst in case load fires before we attach
+        doSize();
+        let early = 0;
+        const earlyBurst = setInterval(() => { doSize(); if (++early > 10) clearInterval(earlyBurst); }, 250);
+
+        f.addEventListener('load', () => {
+          // initial sizing bursts after load as well
+          let count = 0;
+          const burst = setInterval(() => { doSize(); if (++count > 20) clearInterval(burst); }, 200);
+          // one more after 3s for late assets
+          setTimeout(doSize, 3000);
+          // mark as loaded for fade-in
+          f.classList.add('loaded');
+        });
+
+        // If the iframe document is already ready, mimic the load handler
+        try {
+          const doc = f.contentDocument || (f.contentWindow && f.contentWindow.document);
+          if (doc && doc.readyState && doc.readyState !== 'loading') {
+            let count = 0;
+            const burst = setInterval(() => { doSize(); if (++count > 20) clearInterval(burst); }, 200);
+            setTimeout(doSize, 3000);
+            f.classList.add('loaded');
+          }
+        } catch(e) { /* ignore */ }
+      }
+      setup('if-timeline');
+      setup('if-about');
+      window.addEventListener('resize', () => {
+        sizeIframe(document.getElementById('if-timeline'));
+        sizeIframe(document.getElementById('if-about'));
+      });
+    })();
+
+    // Drive embedded timeline's progress bar based on host page scroll
+    (function(){
+      const tl = document.getElementById('if-timeline');
+      if (!tl) return;
+      let ticking = false;
+      function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+      function computeProgress(){
+        const rect = tl.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+        const total = rect.height - vh;
+        if (total <= 0) return rect.top <= 0 ? 1 : 0; // fully in view or above
+        const scrolled = -rect.top; // how much top has passed the viewport top
+        return clamp01(scrolled / total);
+      }
+      function post(){
+        try {
+          const v = computeProgress();
+          if (tl.contentWindow) tl.contentWindow.postMessage({ type: 'timeline-progress', value: v }, '*');
+        } catch(_){}
+      }
+      function onScroll(){ if (!ticking) { ticking = true; requestAnimationFrame(() => { post(); ticking = false; }); } }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+      // initial kick
+      onScroll();
+    })();
+
+    // Page transition helpers for calendar page
+    (function(){
+      // Fade-in on arrival if previous page set the session flag
+      try {
+        if (!__isEmbed && sessionStorage.getItem('pt') === '1') {
+          sessionStorage.removeItem('pt');
+          document.addEventListener('DOMContentLoaded', () => {
+            // ensure we have a transition
+            document.body.style.transition = 'opacity 0.8s ease';
+            // start hidden then reveal
+            document.body.style.opacity = '0';
+            requestAnimationFrame(() => { document.body.style.opacity = '1'; });
+          });
+        }
+      } catch(_){}
+
+      // Smooth scroll-triggered navigation to timeline page
+      let navigating = false;
+      function softNavigate(url){
+        if (navigating) return;
+        navigating = true;
+        try { sessionStorage.setItem('pt', '1'); } catch(_) {}
+        document.body.style.transition = 'opacity 0.8s ease';
+        document.body.style.opacity = '0';
+        setTimeout(() => { window.location.href = url; }, 800);
+      }
+      function onScroll(){
+        const doc = document.documentElement;
+        const total = Math.max(1, doc.scrollHeight - window.innerHeight);
+        const scrolled = (window.scrollY || doc.scrollTop || 0);
+        const pct = scrolled / total;
+        if (pct > 0.8) softNavigate('timeline.html');
+      }
+      // Disable standalone navigation when embedded inside another page
+      if (!__isEmbed) {
+        window.addEventListener('scroll', onScroll, { passive: true });
+      }
+    })();
+
+    // In embed mode, remove internal embed stack (timeline/about) to avoid nesting
+    (function(){
+      if (!__isEmbed) return;
+      document.addEventListener('DOMContentLoaded', () => {
+        const stack = document.querySelector('.embed-stack');
+        if (stack) {
+          try { stack.remove(); } catch(_) { stack.style.display = 'none'; }
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>

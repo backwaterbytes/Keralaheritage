@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About • Retro Accordion</title>
+  <script>
+    // Early embed signal so CSS can adjust before layout to avoid extra whitespace in iframe
+    (function(){
+      try { if (new URLSearchParams(location.search).get('embed')==='1')
+        document.documentElement.setAttribute('data-embed','1');
+      } catch(_){}
+    })();
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary-brown: #8B4513;
+      --secondary-brown: #A0522D;
+      --light-brown: #D2B48C;
+      --dark-brown: #4b2e12;
+      --cream: #F5F5DC;
+      --gold: #DAA520;
+      --shadow: 0 8px 32px rgba(139, 69, 19, 0.3);
+      --paper-shadow: 0 10px 30px rgba(73, 43, 17, 0.25);
+      --ring: 0 0 0 3px rgba(218,165,32,0.25);
+    }
+
+    html { scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar { width: 0; background: transparent; }
+
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background:
+        url('/static/BACKGROUNDS/BACKGROUNDS/bgabout.png') center/cover no-repeat fixed,
+        var(--cream);
+      color: var(--dark-brown);
+      line-height: 1.6;
+      overflow-x: hidden;
+      opacity: 1;
+      transition: opacity 0.8s ease;
+    }
+
+    /* Header */
+    .header { position: fixed; top: 0; left: 0; right: 0; background: rgba(139, 69, 19, 0.95); backdrop-filter: blur(10px); z-index: 1000; padding: 1rem 2rem; box-shadow: var(--shadow); }
+    .nav-container { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-size: 1.4rem; font-weight: bold; color: var(--cream); text-shadow: 2px 2px 4px rgba(0,0,0,0.5); letter-spacing: 0.5px; }
+    .back-btn { background: var(--gold); color: var(--dark-brown); border: none; padding: 0.5rem 1rem; border-radius: 25px; cursor: pointer; font-weight: bold; transition: all 0.25s ease; box-shadow: 0 4px 15px rgba(218,165,32,0.3); }
+    .back-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(218,165,32,0.4); }
+
+    /* Progress bar */
+    .scroll-progress { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: rgba(139,69,19,0.2); z-index: 1001; }
+    .scroll-progress-bar { height: 100%; background: linear-gradient(90deg, var(--gold), var(--primary-brown)); width: 0%; transition: width 0.1s ease; }
+
+    /* Embed-mode quick CSS */
+    [data-embed="1"] .header { display: none !important; }
+    [data-embed="1"] .main { margin-top: 0 !important; }
+    [data-embed="1"] .content-wrap { max-width: none !important; padding-left: 1rem !important; padding-right: 1rem !important; }
+    [data-embed="1"] .hero { padding-left: 1rem !important; padding-right: 1rem !important; }
+
+    /* Base background with bgabout.png */
+    html, body { 
+      background: url('/static/BACKGROUNDS/BACKGROUNDS/bgabout.png') center/cover no-repeat fixed, #f3ead7; 
+      overflow-x: hidden; 
+    }
+    /* Particle background canvas */
+    .particles-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* Hero */
+    .main { margin-top: 84px; position: relative; z-index: 1; }
+    .hero { text-align: center; padding: 4rem 2rem 2rem; }
+    .title { font-size: clamp(2.2rem, 5vw, 3.5rem); color: var(--primary-brown); text-shadow: 2px 2px 4px rgba(0,0,0,0.08); animation: fadeInUp 0.8s ease-out both; }
+    .subtitle { margin-top: 0.75rem; color: var(--secondary-brown); animation: fadeInUp 0.9s ease-out both; animation-delay: 0.1s; }
+
+    .content-wrap { max-width: 940px; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+
+    /* Retro paper card container */
+    .paper {
+      background: rgba(245,245,220,0.94);
+      border-radius: 18px;
+      border: 2px solid rgba(75,49,36,0.85); /* darker outline */
+      box-shadow: 0 16px 44px rgba(73,43,17,0.45), 0 4px 14px rgba(0,0,0,0.08);
+      backdrop-filter: blur(4px);
+      padding: 1rem 1.1rem;
+      margin: 1.25rem auto; /* center */
+      position: relative;
+      overflow: hidden;
+      max-width: 760px; /* slightly smaller */
+      transform: translateY(0);
+      animation: paperFloat 8s ease-in-out infinite;
+      will-change: transform;
+    }
+    .paper:after { /* subtle paper grain overlay */
+      content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(transparent, rgba(0,0,0,0.04)); mix-blend-mode: multiply; opacity: 0.45;
+    }
+
+    /* Section heading */
+    .section-head { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; }
+    .section-head .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px rgba(218,165,32,0.25), 0 0 16px rgba(218,165,32,0.45); }
+    .section-head h2 { font-size: 1.25rem; letter-spacing: 0.3px; color: var(--dark-brown); }
+
+    /* Accordion */
+    .accordion { margin-top: 0.25rem; }
+    .acc-item { background: rgba(245,245,220,0.97); border: 1px solid rgba(139,69,19,0.18); border-radius: 14px; margin: 0.75rem 0; overflow: hidden; position: relative; box-shadow: 0 8px 20px rgba(73,43,17,0.15); }
+    .acc-item.open { box-shadow: 0 14px 34px rgba(73,43,17,0.22); }
+
+    .acc-header { display: flex; align-items: center; gap: 0.75rem; justify-content: space-between; padding: 1rem 1.1rem; cursor: pointer; user-select: none; transition: background 0.25s ease, transform 0.1s ease; }
+    .acc-header:hover { background: rgba(218,165,32,0.08); }
+    .acc-left { display: flex; align-items: center; gap: 0.8rem; }
+    .badge { background: var(--gold); color: var(--dark-brown); font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.8rem; box-shadow: 0 2px 8px rgba(218,165,32,0.35); letter-spacing: 0.3px; }
+    .acc-title { font-size: 1.1rem; font-weight: 700; color: var(--primary-brown); }
+    .chev { width: 22px; height: 22px; display: grid; place-items: center; transition: transform 0.25s ease; }
+    .acc-item.open .chev { transform: rotate(180deg); }
+
+    .acc-panel { overflow: hidden; max-height: 0; transition: max-height 0.45s cubic-bezier(.22,.97,.36,1), opacity 0.25s ease; opacity: 0; background: rgba(245,245,220,0.9); }
+    .acc-inner { padding: 0 1.1rem 1.15rem; transform-origin: top; animation: none; }
+
+    .acc-item.open .acc-panel { opacity: 1; }
+    .acc-item.open .acc-inner { animation: dropIn 420ms cubic-bezier(.22,1.05,.36,1) both; }
+
+    @keyframes dropIn { 0% { transform: translateY(-10px) scaleY(0.98); opacity: 0; } 60% { transform: translateY(2px) scaleY(1.01); opacity: 1; } 100% { transform: translateY(0) scaleY(1); opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes paperFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    /* About grid inside panels */
+    .grid { display: grid; gap: 0.85rem; grid-template-columns: repeat(12, 1fr); margin-top: 0.6rem; }
+    .col-6 { grid-column: span 6; }
+    .col-12 { grid-column: span 12; }
+
+    .card {
+      background: rgba(255,255,255,0.65);
+      border: 1px dashed rgba(139,69,19,0.35);
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+    }
+
+    .lead { color: var(--secondary-brown); }
+    .emph { color: var(--primary-brown); font-weight: 700; }
+    .small { font-size: 0.95rem; color: #6b4a2a; }
+
+    /* About photo */
+    .about-photo img {
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: var(--paper-shadow);
+      border: 1px solid rgba(139,69,19,0.25);
+      display: block;
+    }
+
+    /* Footer spacing */
+    .spacer { height: 80px; }
+
+    @media (max-width: 820px) {
+      .content-wrap { padding: 0.5rem 0.75rem 2.5rem; }
+      .paper { margin: 0.75rem; }
+      .col-6 { grid-column: span 12; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Scroll Progress -->
+  <div class="scroll-progress"><div class="scroll-progress-bar" id="progressBar"></div></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="nav-container">
+      <div class="logo">Retro About</div>
+      <div>
+        <button class="back-btn" onclick="goBack()">← Back to Timeline</button>
+        <button class="back-btn" style="margin-left:8px" onclick="goContact()">Contact</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="hero">
+      <h1 class="title">About Us — Retro Edition</h1>
+      <p class="subtitle">Mission • Vision • Who We Are • Our Working Method</p>
+    </section>
+
+    <div class="content-wrap">
+      <div class="paper">
+        <div class="section-head">
+          <div class="dot"></div>
+          <h2>Explore the sections below</h2>
+        </div>
+
+        <div class="accordion" id="aboutAccordion">
+          <!-- About Us -->
+          <div class="acc-item">
+            <div class="acc-header" role="button" aria-expanded="false" tabindex="0">
+              <div class="acc-left">
+                <span class="badge">01</span>
+                <div class="acc-title">About Us</div>
+              </div>
+              <div class="chev" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="#8B4513" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="acc-panel">
+              <div class="acc-inner">
+                <p class="lead">We are a collective of storytellers and technologists celebrating culture with a <span class="emph">retro</span> touch.</p>
+                <div class="grid">
+                  <div class="col-6">
+                    <div class="card small">Our craft blends classic aesthetics with modern interactions to create memorable experiences.</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="card small">From timelines to festivals, every pixel nods to heritage while feeling fresh and engaging.</div>
+                  </div>
+                </div>
+                <div class="grid">
+                  <div class="col-12">
+                    <div class="card about-photo">
+                      <img src="usbg.jpg" alt="Backwater Bytes team photo" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mission -->
+          <div class="acc-item">
+            <div class="acc-header" role="button" aria-expanded="false" tabindex="0">
+              <div class="acc-left">
+                <span class="badge">02</span>
+                <div class="acc-title">Our Mission</div>
+              </div>
+              <div class="chev" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="#8B4513" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="acc-panel">
+              <div class="acc-inner">
+                <p class="lead">To preserve and present cultural narratives with warmth, clarity, and playful detail.</p>
+                <div class="grid">
+                  <div class="col-6"><div class="card small">Design interfaces that feel familiar, like opening a vintage scrapbook.</div></div>
+                  <div class="col-6"><div class="card small">Make complex stories readable with simple, delightful motion.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vision -->
+          <div class="acc-item">
+            <div class="acc-header" role="button" aria-expanded="false" tabindex="0">
+              <div class="acc-left">
+                <span class="badge">03</span>
+                <div class="acc-title">Our Vision</div>
+              </div>
+              <div class="chev" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="#8B4513" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="acc-panel">
+              <div class="acc-inner">
+                <p class="lead">A world where every region’s heritage is accessible through interactive, <span class="emph">time-capsule</span> experiences.</p>
+                <div class="grid">
+                  <div class="col-12"><div class="card small">We see digital heritage as living space—where stories grow, connect, and invite participation.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Working Method / How We Work (accordion-style like reference) -->
+          <div class="acc-item">
+            <div class="acc-header" role="button" aria-expanded="false" tabindex="0">
+              <div class="acc-left">
+                <span class="badge">04</span>
+                <div class="acc-title">How We Work</div>
+              </div>
+              <div class="chev" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="#8B4513" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="acc-panel">
+              <div class="acc-inner">
+                <div class="grid">
+                  <div class="col-6"><div class="card small"><b>1. Discover:</b> Workshops and archival research to map narrative threads.</div></div>
+                  <div class="col-6"><div class="card small"><b>2. Design:</b> Retro moodboards, typography tests, and motion studies.</div></div>
+                  <div class="col-6"><div class="card small"><b>3. Develop:</b> Build accessible layouts, craft micro-interactions and performance.</div></div>
+                  <div class="col-6"><div class="card small"><b>4. Deliver:</b> Content curation, QA, and handover with clear documentation.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Values -->
+          <div class="acc-item">
+            <div class="acc-header" role="button" aria-expanded="false" tabindex="0">
+              <div class="acc-left">
+                <span class="badge">05</span>
+                <div class="acc-title">Our Values</div>
+              </div>
+              <div class="chev" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="#8B4513" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="acc-panel">
+              <div class="acc-inner">
+                <div class="grid">
+                  <div class="col-6"><div class="card small">Authenticity</div></div>
+                  <div class="col-6"><div class="card small">Inclusivity</div></div>
+                  <div class="col-6"><div class="card small">Simplicity</div></div>
+                  <div class="col-6"><div class="card small">Performance</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+    </div>
+  </main>
+
+  <script>
+    // Detect embedded mode via URL param
+    const __params = new URLSearchParams(window.location.search);
+    const __isEmbed = __params.get('embed') === '1';
+
+    // Back to timeline
+    function goBack() {
+      if (__isEmbed) return; // disable when embedded
+      document.body.style.transition = 'opacity 0.9s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { window.location.href = 'timeline.html'; }, 900);
+    }
+
+    // Forward to contact
+    function goContact() {
+      if (__isEmbed) return; // disable when embedded
+      document.body.style.transition = 'opacity 0.9s ease';
+      document.body.style.opacity = '0';
+      setTimeout(() => { window.location.href = 'contact.html'; }, 900);
+    }
+
+    // Scroll progress
+    function updateScrollProgress() {
+      const scrollTop = window.pageYOffset;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    // Accordion behavior with drop animation
+    (function() {
+      const items = document.querySelectorAll('.acc-item');
+
+      function setMaxHeight(panel, expand) {
+        if (expand) {
+          panel.style.maxHeight = panel.scrollHeight + 'px';
+        } else {
+          panel.style.maxHeight = '0px';
+        }
+      }
+
+      function closeOthers(current) {
+        items.forEach(it => {
+          if (it !== current && it.classList.contains('open')) {
+            it.classList.remove('open');
+            it.querySelector('.acc-header').setAttribute('aria-expanded', 'false');
+            setMaxHeight(it.querySelector('.acc-panel'), false);
+          }
+        });
+      }
+
+      items.forEach(item => {
+        const header = item.querySelector('.acc-header');
+        const panel = item.querySelector('.acc-panel');
+
+        // Init to collapsed
+        setMaxHeight(panel, false);
+
+        function toggle() {
+          const willOpen = !item.classList.contains('open');
+          closeOthers(item); // only one open at a time, like the reference
+          item.classList.toggle('open');
+          header.setAttribute('aria-expanded', String(willOpen));
+          setMaxHeight(panel, willOpen);
+        }
+
+        header.addEventListener('click', toggle);
+        header.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+        });
+      });
+    })();
+
+    // Page entrance and scroll listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!__isEmbed) {
+        document.body.style.opacity = '0';
+        document.body.style.transition = 'opacity 1s ease';
+        setTimeout(() => { document.body.style.opacity = '1'; }, 100);
+      }
+      updateScrollProgress();
+    });
+
+    window.addEventListener('scroll', updateScrollProgress);
+    window.addEventListener('load', () => {
+      updateScrollProgress();
+      if (__isEmbed) {
+        const headerEl = document.querySelector('.header');
+        const progressEl = document.querySelector('.scroll-progress');
+        const mainEl = document.querySelector('.main');
+        const contentWrap = document.querySelector('.content-wrap');
+        const hero = document.querySelector('.hero');
+        if (headerEl) headerEl.style.display = 'none';
+        // Keep progress visible when embedded
+        if (progressEl) progressEl.style.display = 'block';
+        if (mainEl) mainEl.style.marginTop = '0';
+        // Reduce side gutters when embedded
+        if (contentWrap) {
+          contentWrap.style.maxWidth = 'none';
+          contentWrap.style.paddingLeft = '1rem';
+          contentWrap.style.paddingRight = '1rem';
+        }
+        if (hero) {
+          hero.style.paddingLeft = '1rem';
+          hero.style.paddingRight = '1rem';
+        }
+        // document.body.style.background = 'transparent'; // keep background by default
+      }
+      // Initialize particles after layout is settled
+      initParticles();
+    });
+
+    // Interactive particles background (gold/brown palette, twinkle + parallax)
+    function initParticles() {
+      try {
+        // Create canvas
+        const canvas = document.createElement('canvas');
+        canvas.className = 'particles-canvas';
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+
+        let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        let w = 0, h = 0;
+
+        // Palette inspired by Kerala vintage gold/browns
+        const COLORS = [
+          'rgba(218,165,32,0.9)',   // gold
+          'rgba(210,180,140,0.85)', // tan
+          'rgba(245,245,220,0.8)',  // cream
+          'rgba(139,69,19,0.8)'     // saddle brown
+        ];
+
+        const state = { particles: [], mouse: { x: 0, y: 0, nx: 0, ny: 0, has: false }, t: 0 };
+
+        function resize() {
+          const cw = window.innerWidth;
+          const ch = window.innerHeight;
+          dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+          canvas.width = Math.floor(cw * dpr);
+          canvas.height = Math.floor(ch * dpr);
+          canvas.style.width = cw + 'px';
+          canvas.style.height = ch + 'px';
+          w = canvas.width; h = canvas.height;
+          // Recreate particles scaled to area
+          spawnParticles();
+        }
+
+        function spawnParticles() {
+          const area = (w/dpr) * (h/dpr);
+          const baseDensity = 0.00024; // even higher density
+          let count = Math.round(area * baseDensity);
+          count = Math.max(140, Math.min(count, 480));
+          if (__isEmbed) count = Math.floor(count * 0.85); // slightly lighter when embedded
+          const old = state.particles;
+          const next = [];
+          for (let i = 0; i < count; i++) {
+            const p = old[i] || {};
+            p.x = Math.random() * w;
+            p.y = Math.random() * h;
+            p.vx = (Math.random() - 0.5) * 0.06 * dpr; // gentle drift
+            p.vy = (Math.random() - 0.5) * 0.06 * dpr;
+            p.size = (Math.random() * 2.4 + 0.9) * dpr;
+            p.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+            p.shape = Math.random() < 0.7 ? 'circle' : 'star';
+            p.twPhase = Math.random() * Math.PI * 2;
+            p.twRate = 0.5 + Math.random() * 0.8; // twinkle speed
+            p.depth = 0.3 + Math.random() * 0.9; // for layered parallax
+            next.push(p);
+          }
+          state.particles = next;
+        }
+
+        function drawStar(cx, cy, spikes, outerR, innerR) {
+          const rot = Math.PI / 2 * 3;
+          let x = cx, y = cy;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - outerR);
+          for (let i = 0; i < spikes; i++) {
+            x = cx + Math.cos(rot + (i * Math.PI) / spikes) * outerR;
+            y = cy + Math.sin(rot + (i * Math.PI) / spikes) * outerR;
+            ctx.lineTo(x, y);
+            x = cx + Math.cos(rot + (i * Math.PI) / spikes + Math.PI / (2*spikes)) * innerR;
+            y = cy + Math.sin(rot + (i * Math.PI) / spikes + Math.PI / (2*spikes)) * innerR;
+            ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        function animate() {
+          state.t += 0.016;
+          // Clear with faint veil for slight trails
+          ctx.clearRect(0, 0, w, h);
+
+          const parallaxStrength = 180 * dpr; // much stronger mouse displacement influence
+          const nx = state.mouse.nx, ny = state.mouse.ny;
+          const windX = Math.sin(state.t * 0.2) * 0.02 * dpr;
+          const windY = Math.cos(state.t * 0.17) * 0.02 * dpr;
+
+          for (const p of state.particles) {
+            // Velocity + soft parallax force toward mouse direction
+            const pvx = p.vx + windX + nx * (parallaxStrength / Math.max(w, h)) * (0.6 + 0.4 * Math.random());
+            const pvy = p.vy + windY + ny * (parallaxStrength / Math.max(w, h)) * (0.6 + 0.4 * Math.random());
+            p.x += pvx;
+            p.y += pvy;
+
+            // Wrap around edges
+            if (p.x < -20) p.x = w + 20; else if (p.x > w + 20) p.x = -20;
+            if (p.y < -20) p.y = h + 20; else if (p.y > h + 20) p.y = -20;
+
+            // Twinkle alpha
+            const a = 0.5 + 0.5 * Math.sin(state.t * p.twRate + p.twPhase);
+            ctx.globalAlpha = 0.35 + 0.65 * a;
+            ctx.fillStyle = p.color;
+            ctx.shadowColor = 'rgba(218,165,32,0.45)';
+            ctx.shadowBlur = 6 * dpr;
+            // Parallax draw coordinates
+            const dx = nx * parallaxStrength * p.depth;
+            const dy = ny * parallaxStrength * p.depth;
+            const drawX = p.x + dx;
+            const drawY = p.y + dy;
+
+            if (p.shape === 'circle') {
+              ctx.beginPath();
+              ctx.arc(drawX, drawY, p.size, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              drawStar(drawX, drawY, 5, p.size * 1.2, p.size * 0.6);
+            }
+          }
+
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur = 0;
+          if (!document.hidden) requestAnimationFrame(animate);
+          else setTimeout(() => requestAnimationFrame(animate), 200); // throttle when hidden
+        }
+
+        function onMouseMove(e) {
+          const cx = window.innerWidth / 2;
+          const cy = window.innerHeight / 2;
+          const px = e.clientX - cx;
+          const py = e.clientY - cy;
+          // Normalize to [-1, 1]
+          state.mouse.nx = Math.max(-1, Math.min(1, px / cx));
+          state.mouse.ny = Math.max(-1, Math.min(1, py / cy));
+          state.mouse.has = true;
+        }
+        function onMouseLeave() { state.mouse.has = false; state.mouse.nx *= 0.9; state.mouse.ny *= 0.9; }
+        function onTouchMove(e) {
+          if (!e.touches || !e.touches.length) return;
+          const t = e.touches[0];
+          onMouseMove({ clientX: t.clientX, clientY: t.clientY });
+        }
+
+        window.addEventListener('mousemove', onMouseMove, { passive: true });
+        document.addEventListener('mousemove', onMouseMove, { passive: true });
+        window.addEventListener('mouseleave', onMouseLeave, { passive: true });
+        window.addEventListener('touchmove', onTouchMove, { passive: true });
+        window.addEventListener('resize', resize);
+
+        resize();
+        requestAnimationFrame(animate);
+      } catch (e) { /* fail silently */ }
+    }
+  </script>
+</body>
+</html>

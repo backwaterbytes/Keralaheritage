@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kerala Trip Planner</title>
+    <style>
+        :root {
+            --primary-brown: #3E2723;
+            --secondary-brown: #5D4037;
+            --gold: #D4A574;
+            --cream: #F1E7D3;
+            --shadow: 0 10px 30px rgba(62,39,35,.25);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { height: 100%; }
+        body {
+            font-family: Georgia, serif;
+            background: url('/static/Brown Vintage Paper Group Project Presentation.png') center/cover no-repeat fixed;
+            color: var(--primary-brown);
+            height: 100%;
+            padding: 20px;
+            overflow: hidden; /* Prevent outer page scrolling */
+        }
+
+        .planner-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(241,231,211,.95);
+            border-radius: 20px;
+            border: 2px solid var(--primary-brown);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            height: calc(100vh - 40px); /* Fit within viewport minus body padding */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .planner-header {
+            background: var(--primary-brown);
+            color: var(--cream);
+            padding: 30px;
+            text-align: center;
+        }
+
+        .planner-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .planner-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            flex: 1 1 auto;       /* take remaining space */
+            min-height: 0;         /* allow internal scrolling */
+            overflow-y: auto;      /* single internal scrollbar */
+            overflow-x: hidden;
+            padding-bottom: 120px; /* ensure ample gap above the bottom edge of the box */
+        }
+
+        .form-section {
+            padding: 40px 40px 180px; /* more bottom space so the button sits clearly higher */
+            border-right: 2px solid var(--gold);
+            min-height: 0;
+        }
+
+        .result-section {
+            padding: 40px;
+            background: rgba(212,165,116,.1);
+            min-height: 0;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-brown);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            font-family: Georgia, serif;
+            background: var(--cream);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .generate-btn {
+            display: block;           /* ensure consistent full-width */
+            width: 92%;               /* slightly narrower */
+            padding: 16px 18px;       /* reduced height */
+            min-height: 52px;         /* reduced height */
+            line-height: 1.25;
+            background: var(--gold);
+            color: var(--primary-brown);
+            border: 2px solid var(--gold); /* match input borders for visual balance */
+            border-radius: 14px;      /* slightly larger radius */
+            font-size: 1.15rem;       /* slightly smaller text */
+            font-weight: 700;
+            letter-spacing: .1px;
+            box-shadow: 0 10px 30px rgba(62,39,35,.20);
+            margin: 0 auto 48px;      /* center and lift from bottom edge */
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .generate-btn:hover {
+            background: var(--secondary-brown);
+            color: var(--cream);
+            border-color: var(--secondary-brown);
+            transform: translateY(-2px);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--gold);
+            border-top: 4px solid var(--primary-brown);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .itinerary {
+            display: none;
+        }
+
+        .itinerary.show {
+            display: block;
+        }
+
+        .day-card {
+            background: var(--cream);
+            border: 2px solid var(--gold);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(62,39,35,.15);
+        }
+
+        .day-header {
+            background: var(--gold);
+            color: var(--primary-brown);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .time-slot {
+            margin: 20px 0 10px 0;
+            padding: 12px;
+            background: rgba(212,165,116,0.1);
+            border-left: 4px solid #D4A574;
+            border-radius: 6px;
+        }
+        
+        .time-slot h4 {
+            margin: 0;
+            color: #3E2723;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .description-text {
+            margin: 15px 0;
+            padding: 0;
+            background: none;
+            border: none;
+            color: #3E2723;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--primary-brown);
+            color: var(--cream);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .planner-content {
+                grid-template-columns: 1fr;
+                overflow: auto; /* keep internal scroll on mobile */
+            }
+            
+            .form-section {
+                border-right: none;
+                border-bottom: 2px solid var(--gold);
+                padding-bottom: 200px; /* extra breathing room for the button on mobile */
+            }
+
+            .generate-btn {
+                width: 100%;          /* full width on mobile for usability */
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="festival-calendar.html" class="back-btn">← Back to Calendar</a>
+    
+    <div class="planner-container">
+        <div class="planner-header">
+            <h1>🌴 Kerala Trip Planner</h1>
+            <p>Create your personalized 3-day Kerala heritage & culture experience</p>
+        </div>
+        
+        <div class="planner-content">
+            <div class="form-section">
+                <form id="tripForm">
+                    <div class="form-group">
+                        <label for="district">District</label>
+                        <select id="district" required>
+                            <option value="">Select District</option>
+                            <option value="Alappuzha">Alappuzha</option>
+                            <option value="Ernakulam">Ernakulam</option>
+                            <option value="Idukki">Idukki</option>
+                            <option value="Kannur">Kannur</option>
+                            <option value="Kasargod">Kasargod</option>
+                            <option value="Kollam">Kollam</option>
+                            <option value="Kottayam">Kottayam</option>
+                            <option value="Kozhikode">Kozhikode</option>
+                            <option value="Malappuram">Malappuram</option>
+                            <option value="Palakkad">Palakkad</option>
+                            <option value="Pathanamthitta">Pathanamthitta</option>
+                            <option value="Thiruvananthapuram">Thiruvananthapuram</option>
+                            <option value="Thrissur">Thrissur</option>
+                            <option value="Wayanad">Wayanad</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="travelStyle">Travel Style</label>
+                        <select id="travelStyle" required>
+                            <option value="">Select Style</option>
+                            <option value="Heritage & Culture">Heritage & Culture</option>
+                            <option value="Nature & Adventure">Nature & Adventure</option>
+                            <option value="Food & Culinary">Food & Culinary</option>
+                            <option value="Spiritual & Pilgrimage">Spiritual & Pilgrimage</option>
+                            <option value="Family-friendly">Family-friendly</option>
+                            <option value="Romantic">Romantic</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="budget">Budget</label>
+                        <select id="budget" required>
+                            <option value="">Select Budget</option>
+                            <option value="Low">Low (₹2,000-5,000/day)</option>
+                            <option value="Medium">Medium (₹5,000-10,000/day)</option>
+                            <option value="Luxury">Luxury (₹10,000+/day)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Preferred Activities</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="museums" value="Museums">
+                                <label for="museums">Museums</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="temples" value="Temples">
+                                <label for="temples">Temples</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="backwaters" value="Backwaters">
+                                <label for="backwaters">Backwaters</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="beaches" value="Beaches">
+                                <label for="beaches">Beaches</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="trekking" value="Trekking">
+                                <label for="trekking">Trekking</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="localArts" value="Local Arts">
+                                <label for="localArts">Local Arts</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="festivals" value="Festivals">
+                                <label for="festivals">Festivals</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="shopping" value="Shopping">
+                                <label for="shopping">Shopping</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="houseboats" value="Houseboats">
+                                <label for="houseboats">Houseboats</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="ayurveda" value="Ayurveda">
+                                <label for="ayurveda">Ayurveda</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="travelMode">Travel Mode</label>
+                        <select id="travelMode" required>
+                            <option value="">Select Mode</option>
+                            <option value="Public transport">Public Transport</option>
+                            <option value="Private vehicle">Private Vehicle</option>
+                            <option value="Mixed">Mixed (Public + Private)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="groupSize">Group Size</label>
+                        <select id="groupSize" name="groupSize" required>
+                            <option value="">Select group size</option>
+                            <option value="Solo Traveler">Solo Traveler (1 person)</option>
+                            <option value="Couple">Couple (2 people)</option>
+                            <option value="Small Group">Small Group (3-5 people)</option>
+                            <option value="Family">Family (6-8 people)</option>
+                            <option value="Large Group">Large Group (9+ people)</option>
+                        </select>
+                    </div>
+
+
+                    <button type="submit" class="generate-btn">Generate My Itinerary ✨</button>
+                </form>
+            </div>
+
+            <div class="result-section">
+                <div id="loadingState" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Creating your personalized Kerala experience...</p>
+                </div>
+
+                <div id="itineraryResult" class="itinerary">
+                    <!-- Generated itinerary will appear here -->
+                </div>
+
+                <div id="defaultMessage">
+                    <h3>🗺️ Your Personalized Itinerary</h3>
+                    <p>Fill out the form to generate a customized 3-day Kerala travel plan based on your preferences.</p>
+                    <br>
+                    <p><strong>What you'll get:</strong></p>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Day-by-day detailed schedule</li>
+                        <li>Morning, afternoon & evening activities</li>
+                        <li>Cultural highlights & heritage sites</li>
+                        <li>Local cuisine recommendations</li>
+                        <li>Travel tips & practical advice</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        const DEEPSEEK_API_KEY = 'sk-3539ab7d01c7438f81a3e818b26966ae';
+        const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+
+        document.getElementById('tripForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Collect form data
+            const formData = {
+                district: document.getElementById('district').value,
+                travelStyle: document.getElementById('travelStyle').value,
+                budget: document.getElementById('budget').value,
+                travelMode: document.getElementById('travelMode').value,
+                groupSize: document.getElementById('groupSize').value
+            };
+
+            // Collect selected activities
+            const activities = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                activities.push(checkbox.value);
+            });
+
+            // Show loading state
+            document.getElementById('defaultMessage').style.display = 'none';
+            document.getElementById('itineraryResult').classList.remove('show');
+            document.getElementById('loadingState').style.display = 'block';
+
+            try {
+                const itinerary = await generateItinerary(formData, activities);
+                displayItinerary(itinerary);
+            } catch (error) {
+                console.error('Error generating itinerary:', error);
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('itineraryResult').innerHTML = `
+                    <div style="text-align: center; color: #d32f2f; padding: 20px;">
+                        <h3>⚠️ Error Generating Itinerary</h3>
+                        <p>Sorry, we couldn't generate your itinerary right now. Please try again later.</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Error: ${error.message}</p>
+                    </div>
+                `;
+                document.getElementById('itineraryResult').classList.add('show');
+            }
+        });
+
+        async function generateItinerary(formData, activities) {
+            // First try DeepSeek API
+            try {
+                const prompt = `You are a Kerala tourism expert. Based on the following user preferences, create a detailed 3-day itinerary STRICTLY within ${formData.district} district only. Each day should include Morning, Afternoon, and Evening activities. DO NOT include places from other districts like Ernakulam, Alappuzha, Kottayam, etc. Focus ONLY on attractions, restaurants, accommodations, and activities that are located within ${formData.district} district boundaries.
+
+User Preferences:
+District: ${formData.district} (ONLY places within this district)
+Duration: 3 days
+Style: ${formData.travelStyle}
+Budget: ${formData.budget}
+Activities: ${activities.join(', ')}
+Travel Mode: ${formData.travelMode}
+Group Size: ${formData.groupSize}
+
+GROUP SIZE CONSIDERATIONS: Tailor recommendations based on the group size (${formData.groupSize}). For solo travelers, include solo-friendly activities and accommodations. For couples, suggest romantic spots. For families, include kid-friendly activities. For large groups, recommend spacious venues and group activities.
+
+IMPORTANT: All recommended places must be within ${formData.district} district. Do not suggest places from neighboring districts. Include specific place names, timings, and practical tips for ${formData.district} only. Make it engaging and informative while staying geographically accurate to ${formData.district}.`;
+
+                const response = await fetch(DEEPSEEK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    if (response.status === 402) {
+                        throw new Error('API_BILLING_ERROR');
+                    }
+                    throw new Error(`API request failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                if (error.message === 'API_BILLING_ERROR') {
+                    // Fallback to pre-generated template
+                    return generateFallbackItinerary(formData, activities);
+                }
+                throw error;
+            }
+        }
+
+        function generateFallbackItinerary(formData, activities) {
+            const templates = {
+                'Alappuzha': {
+                    'Heritage & Culture': `
+Day 1: Venice of the East
+
+Morning (9:00 AM - 12:00 PM)
+Start your Kerala heritage journey at Alappuzha Beach, where you'll find a historic lighthouse built in 1862 and a 150-year-old pier that tells tales of maritime history. The beach entry is free, though climbing the lighthouse costs ₹20 for panoramic coastal views. Continue to St. Andrew's Basilica Arthunkal, showcasing magnificent Indo-European architecture with a miraculous statue of St. Sebastian that draws pilgrims from across the region. Experience authentic coastal life at Alappuzha Fish Market, where fresh catch auctions happen between 6-10 AM, offering you a glimpse into local fishing traditions and varieties of fish unique to Kerala waters.
+
+For breakfast, visit Cafe Catamaran on Beach Road, renowned for seafood specialties including traditional Fish Curry and Rice priced between ₹120-200.
+
+Afternoon (1:00 PM - 5:00 PM)
+Embark on a traditional houseboat cruise aboard a Kettuvallam, these floating marvels offer 2-4 hour journeys priced ₹3,000-8,000 depending on luxury level and amenities. Take a 30-minute boat ride to Pathiramanal Island, a bird sanctuary home to over 150 species, costing ₹500 per person. Explore Kumbakonam village for an authentic coir village tour, witnessing traditional coir making processes and purchasing handmade products ranging ₹50-500.
+
+Consider staying at Punnamada Resort, offering lakefront luxury accommodation priced ₹8,000-15,000 per night, contact +91 477 223 0560.
+
+Evening (6:00 PM - 9:00 PM)
+Witness breathtaking sunsets at Vembanad Lake, Kerala's largest lake, with boat rides available for ₹200-500. Experience traditional Kathakali performances at Mudra Cultural Centre, with shows starting at 6:30 PM priced ₹300-500. Dine at Thaff Restaurant, famous for Karimeen fish curry and Appam, with meals costing ₹250-400.
+
+Day 2: Royal Heritage and Traditions
+
+Morning (8:00 AM - 12:00 PM)
+Visit the magnificent Krishnapuram Palace, an 18th-century architectural wonder housing Kerala's largest mural "Gajendra Moksha" for just ₹25 entry. Explore Ambalappuzha Temple, famous for its divine Palpayasam sweet offering and 15th-century architecture with free entry. Witness the temple kitchen where palpayasam is prepared using traditional methods, with tasting opportunities for ₹50.
+
+Enjoy lunch at Dreamers Cafe, serving traditional Kerala meals including elaborate Sadya for ₹180-250.
+
+Afternoon (1:00 PM - 5:00 PM)
+Take a serene canoe ride through narrow canals for 2 hours, costing ₹800-1,200 per canoe, offering intimate views of backwater life. Experience local culture at Sreekrishna Toddy Shop in Kumbakonam, where you can taste fresh palm wine and traditional snacks for ₹30-80. Participate in a cooking class at Abad Whispering Palms, learning to prepare Fish Molee and Puttu for ₹1,500 per person.
+
+Evening (6:00 PM - 9:00 PM)
+Watch snake boat demonstrations, especially during Nehru Trophy boat race training season (August-September), with off-season demos available for ₹200. Shop for authentic coir crafts at Coir Corporation Showroom, featuring mats, bags, and decorative items priced ₹100-2,000. Consider heritage accommodation at Raheem Residency, a converted palace offering rooms for ₹4,000-7,000 per night.
+
+Day 3: Coastal Culture and Wellness
+
+Morning (8:00 AM - 12:00 PM)
+Explore Marari Beach, featuring pristine 11km coastline perfect for fishing village walks with free beach access. Take a comprehensive fishing village tour of Mararikulam Village, learning traditional fishing methods and witnessing boat making demonstrations. Visit local fish markets to buy fresh catch and learn about varieties unique to this region, with prices ranging ₹200-800 per kg.
+
+Enjoy brunch at Marari Beach Resort, featuring extensive seafood buffets priced ₹800-1,200.
+
+Afternoon (1:00 PM - 5:00 PM)
+Embark on a village bicycle tour through scenic paddy fields and coconut groves, with bike rentals available for ₹200 per day. Visit Green Park Ayurvedic Spice Garden to discover cardamom, pepper, and cinnamon cultivation with entry at ₹100. Indulge in authentic Ayurvedic treatments at Marari Ayurveda Centre, offering full body massages priced ₹2,500-4,000.
+
+Evening (6:00 PM - 9:00 PM)
+Experience a traditional Sadya at Abad Whispering Palms, featuring 28 courses served on banana leaf for ₹450. Shop for souvenirs at Spice Market on Mullakkal Street, offering cardamom, pepper, and tea priced ₹200-1,500. Visit Kerala State Handicrafts for authentic wood carvings and metalwork ranging ₹300-5,000.
+
+Accommodation Options:
+Budget travelers can choose Cherukara Nest at ₹1,800-2,800 per night, contact +91 477 270 3520. Mid-range option is Lake Palace Resort priced ₹4,500-6,500, contact +91 477 223 0650. Luxury accommodation at Kumarakom Lake Resort costs ₹12,000-25,000, contact +91 481 252 4900.
+
+Local Transport:
+Auto-rickshaws charge ₹12-18 per km, full-day taxis cost ₹2,800-4,000, boat taxis range ₹300-800 per trip, and bicycle rentals are ₹150-250 per day.
+
+Must-Buy Items:
+Coir products range ₹50-2,000, spices like cardamom cost ₹800-1,200 per kg, coconut oil is priced ₹200-400 per liter, and traditional Kasavu sarees range ₹2,000-15,000.
+
+Emergency Contacts:
+Tourist Helpline: 1364, Alappuzha Medical College: +91 477 228 2820, Boat Emergency: +91 477 225 1796
+                    `
+                },
+                'Ernakulam': {
+                    'Heritage & Culture': `
+**Day 1: Fort Kochi Heritage**
+
+**Morning (9:00 AM - 12:00 PM)**
+Begin at the iconic Chinese Fishing Nets at Fort Kochi, Ernakulam. Visit St. Francis Church, India's oldest European church in Ernakulam. Explore the Dutch Cemetery and learn about colonial history of Ernakulam.
+
+**Afternoon (1:00 PM - 5:00 PM)**
+Walk through Jew Town in Ernakulam and visit the Paradesi Synagogue. Explore the spice markets and antique shops in Mattancherry, Ernakulam. Visit the Dutch Palace (Mattancherry Palace) in Ernakulam to see Kerala murals.
+
+**Evening (6:00 PM - 9:00 PM)**
+Watch sunset from Fort Kochi beach in Ernakulam. Attend a Kathakali performance at Kerala Kathakali Centre in Ernakulam. Dine at a heritage restaurant in Fort Kochi, Ernakulam.
+
+**Day 2: Cultural Exploration**
+
+**Morning (8:00 AM - 12:00 PM)**
+Visit the Hill Palace Museum in Tripunithura, Ernakulam. Explore the archaeological museum and deer park in Ernakulam. Learn about the Cochin Royal Family history at this Ernakulam heritage site.
+
+**Afternoon (1:00 PM - 5:00 PM)**
+Take a backwater cruise from Marine Drive in Ernakulam. Visit Bolgatty Palace and Island in Ernakulam. Experience local art at Kashi Art Café and galleries in Ernakulam.
+
+**Evening (6:00 PM - 9:00 PM)**
+Stroll along Marine Drive promenade in Ernakulam. Shop at Lulu Mall or Broadway in Ernakulam. Enjoy Kerala cuisine at a traditional restaurant in Ernakulam.
+
+**Day 3: Modern Heritage**
+
+**Morning (8:00 AM - 12:00 PM)**
+Visit the Kerala Folklore Museum in Ernakulam. Explore traditional architecture and artifacts at this Ernakulam museum. Learn about Kerala's cultural evolution.
+
+**Afternoon (1:00 PM - 5:00 PM)**
+Take a ferry ride across Vembanad Lake from Ernakulam. Visit Vypin Island and lighthouse accessible from Ernakulam. Experience local fishing communities around Ernakulam.
+
+**Evening (6:00 PM - 9:00 PM)**
+Enjoy cultural performances at Ernakulam Town Hall. Shop for souvenirs at local markets in Ernakulam. Farewell dinner with traditional Kerala feast in Ernakulam.
+
+**Travel Tips:**
+- Use Ernakulam metro and ferries for easy transportation
+- Fort Kochi area is walkable - rent a bicycle
+- Book Kathakali shows in advance in Ernakulam
+- Try local street food at Broadway, Ernakulam
+- Carry umbrella during monsoon season
+                    `
+                },
+                'Thrissur': {
+                    'Heritage & Culture': `
+Day 1: Cultural Capital Heritage
+
+Morning (9:00 AM - 12:00 PM)
+Begin your spiritual journey at Vadakkunnathan Temple, an ancient Shiva temple showcasing stunning Kerala architecture with intricate murals dating back over 1000 years. The temple requires traditional attire and offers free entry to witness this architectural marvel. Next, explore Thrissur Round, the historic town center designed by Sakthan Thampuran, perfect for morning walks and photography of colonial-era buildings. Visit the Archaeological Museum to discover rare artifacts, ancient coins, and sculptures that tell the story of Kerala's rich heritage. Entry costs just ₹10 and it's open from 10 AM to 5 PM.
+
+For breakfast, head to Pathans Hotel near the Round, famous for traditional Kerala breakfast featuring Puttu and Kadala curry, priced between ₹40-80.
+
+Afternoon (1:00 PM - 5:00 PM)
+Spend your afternoon at the 25-acre Thrissur Zoo and Museum, home to rare species and a comprehensive natural history museum. Entry is ₹15 for adults and ₹10 for children. Continue to Kerala Sahitya Akademi, a literary heritage center housing rare manuscripts and hosting cultural programs that showcase Kerala's intellectual traditions.
+
+For accommodation, consider Luciya Palace Hotel, a heritage property offering rooms between ₹3,500-5,500 per night. Contact them at +91 487 242 4731. For shopping, visit Devika Handicrafts on TB Road for authentic bell metal items and wood carvings priced between ₹200-2000.
+
+Evening (6:00 PM - 9:00 PM)
+Drive 30km to Kerala Kalamandalam in Cheruthuruthy, the world's premier center for classical arts, where evening performances cost ₹100-500. Return to Thrissur for dinner at Hotel Bharath on Round East, specializing in vegetarian dishes including the famous Palada Payasam, with meals priced ₹150-300. End your evening shopping at Thrissur Round Market for spices, textiles, and souvenirs.
+
+Day 2: Spiritual and Natural Wonders
+
+Morning (8:00 AM - 12:00 PM)
+Visit Guruvayur Temple, known as the "Dwarka of South India", a famous Krishna temple offering free entry but requiring traditional dress code of dhoti for men and saree for women. Experience the unique Guruvayur Elephant Sanctuary housing over 60 temple elephants, with feeding time between 6-8 AM and entry at ₹25. For luxury accommodation, consider Guruvayur Gateway Hotel offering temple view rooms at ₹4,000-7,000 per night.
+
+Enjoy lunch at Vishnu Inn in Guruvayur, serving traditional sadya on banana leaf for ₹120-180.
+
+Afternoon (1:00 PM - 5:00 PM)
+Journey to Athirapally Waterfalls, the majestic 80-foot waterfall known as the "Niagara of Kerala" and featured in numerous Bollywood films. Entry costs ₹30 with parking at ₹20. Continue to Vazhachal Waterfalls, located 5km from Athirapally, offering pristine forest settings perfect for photography. For a unique stay experience, book Rainforest Resort featuring treehouse accommodation priced ₹8,000-12,000 per night, contact +91 480 287 0250.
+
+Evening (6:00 PM - 9:00 PM)
+Return to Thrissur and visit the Handicraft Emporium on Shornur Road for government-certified authentic crafts. Dine at Ming Palace in Kokkalai, offering Chinese-Kerala fusion cuisine for ₹400-800 for two people.
+
+Day 3: Royal Heritage and Local Culture
+
+Morning (8:00 AM - 12:00 PM)
+Explore the 200-year-old Shakthan Thampuran Palace, showcasing Dutch-Kerala architecture and housing a museum with royal artifacts for just ₹20 entry. Visit the Basilica of Our Lady of Dolours, the largest church in India featuring Gothic architecture with 11 altars and free entry. Learn about Kerala's grandest festival at the Thrissur Pooram Gallery, discovering the history of elephant processions and spectacular fireworks.
+
+Enjoy brunch at Suprabhatam Restaurant, serving South Indian delicacies including Appam and Stew for ₹80-150.
+
+Afternoon (1:00 PM - 5:00 PM)
+Take a 30km trip to Cheraman Juma Masjid in Kodungallur, India's first mosque with significant historical importance. Return to explore local markets on Big Bazaar Street for textiles, spices, and traditional Kasavu sarees priced ₹500-5000. Visit Bell Metal Street for traditional Thrissur bell metal crafts including lamps and vessels ranging ₹300-3000.
+
+Evening (6:00 PM - 9:00 PM)
+Attend cultural performances at Koothambalam featuring classical music and dance for ₹200-500 if available. Enjoy your farewell dinner at Hotel Bharat, savoring traditional Kerala feast with various Payasam varieties for ₹250-400. Complete your shopping at Khadi Gramodyog for handloom textiles and organic spices.
+
+Accommodation Options:
+Budget travelers can stay at Hotel Luciya for ₹1,500-2,500 per night, contact +91 487 233 3800. Mid-range option is Casino Hotel at ₹3,000-4,500, contact +91 487 242 1699. For luxury, choose Ramada Thrissur at ₹6,000-9,000, contact +91 487 235 3355.
+
+Local Transport:
+Auto-rickshaws charge ₹15-20 per km, full-day taxis cost ₹2,500-3,500, and KSRTC buses range ₹10-50 depending on distance.
+
+Emergency Contacts:
+Tourist Helpline: 1364, Thrissur Medical College: +91 487 220 1100, Police: 100
+                    `
+                },
+                'Kottayam': {
+                    'Heritage & Culture': `
+Day 1: Land of Letters and Lakes
+
+Morning (9:00 AM - 12:00 PM)
+Begin your literary and spiritual journey at Thirunakkara Mahadeva Temple, a magnificent 16th-century temple renowned for its famous Arattu festival held during March-April. The temple offers free entry but requires traditional dress to witness its architectural splendor and religious significance. Continue to Kottayam Cheriya Palli, dating back to 1579 AD, making it the oldest church in Kottayam with distinctive Portuguese architecture and free entry for visitors. Explore the Syrian Christian Heritage Museum, housing rare manuscripts and ancient crosses that tell the story of Christianity's early arrival in Kerala, with entry at ₹50 and open from 9 AM to 5 PM.
+
+For breakfast, visit Thali Restaurant, specializing in traditional Syrian Christian breakfast featuring Appam and Stew priced between ₹80-120.
+
+Afternoon (1:00 PM - 5:00 PM)
+Spend your afternoon at Kumarakom Bird Sanctuary, a 14-acre haven for over 180 bird species, with best viewing times between 6-10 AM and 5-7 PM, entry costs ₹50. Take a 2-hour backwater cruise on Vembanad Lake, offering serene views and wildlife spotting opportunities for ₹1,500-3,000 per person. For luxury accommodation, consider Kumarakom Lake Resort, an award-winning heritage property priced ₹15,000-30,000 per night, contact +91 481 252 4900.
+
+Visit the Rubber Board Showroom for authentic rubber products including mattresses, priced ₹2,000-15,000.
+
+Evening (6:00 PM - 9:00 PM)
+Witness spectacular sunsets at Kumarakom Sunset Point, offering perfect Vembanad Lake views and photography opportunities. Dine at Coconut Lagoon, renowned for traditional Syrian Christian cuisine including their famous Duck Roast, with meals priced ₹400-800. Experience night fishing with local fishermen, learning traditional techniques and enjoying the peaceful backwater ambiance for ₹800-1,200 per person.
+
+Day 2: Plantation and Spice Heritage
+
+Morning (8:00 AM - 12:00 PM)
+Journey 45km to Peermade Estate for an authentic rubber plantation tour, learning traditional tapping techniques and processing methods for ₹200 per person. Visit Abraham Spice Garden to discover cardamom, pepper, and vanilla cultivation in their natural habitat, with entry at ₹150. Continue to Peermade Tea Estate for a comprehensive tea factory tour including processing demonstrations and tasting sessions priced ₹100-200.
+
+Enjoy lunch at Spice Garden Restaurant, offering farm-to-table meals featuring fresh local ingredients for ₹250-400.
+
+Afternoon (1:00 PM - 5:00 PM)
+Embark on a traditional houseboat journey through Kottayam backwaters, featuring a 4-hour cruise with lunch included, priced ₹4,000-8,000. Take a comprehensive village tour of Kumbakonam Village, witnessing traditional farming practices, coir making processes, and toddy tapping demonstrations. Watch fascinating coconut climbing demonstrations showcasing traditional harvesting techniques passed down through generations.
+
+Evening (6:00 PM - 9:00 PM)
+Explore Kottayam Market at Main Bazaar, offering spices, rubber products, and handloom textiles priced ₹100-2,000. Dine at Hotel Aida, famous throughout Kerala for their authentic Kottayam-style fish curry, with meals costing ₹200-350.
+
+Day 3: Cultural Tapestry
+
+Morning (8:00 AM - 12:00 PM)
+Visit Ettumanoor Mahadeva Temple, famous for its 16th-century murals and golden flag mast, offering free entry with photography permitted for ₹50. Continue to Vaikom Mahadeva Temple, an ancient Shiva temple with significant historical importance as the site of Vaikom Satyagraha, offering free entry to this monument of social reform. Explore Vaikom Muhammad Basheer Museum, dedicated to Malayalam literature and showcasing the renowned writer's memorabilia, with entry at ₹20.
+
+Enjoy brunch at Meenachil Restaurant, serving traditional Kerala meals including their specialty Karimeen curry for ₹150-250.
+
+Afternoon (1:00 PM - 5:00 PM)
+Discover Thazhathangady Juma Masjid, over 1000 years old, showcasing magnificent Indo-Saracenic architecture with intricate wooden carvings and free entry. Visit DC Books, the origin of Kerala's largest bookstore chain, offering extensive Malayalam literature collections with books priced ₹100-1,500. Explore the handicraft village at Kumarakom Craft Centre, featuring authentic wood carvings and metal work ranging ₹200-3,000.
+
+Evening (6:00 PM - 9:00 PM)
+Attend cultural performances at Kottayam Town Hall, featuring classical music and dance shows on weekends for ₹100-300. Shop for rare Malayalam books and publications at Current Books, with prices ranging ₹50-800. Conclude with a farewell dinner at Tharavad Heritage Restaurant, offering traditional Syrian Christian feast for ₹350-500.
+
+Accommodation Options:
+Budget travelers can stay at Anjali Hotel for ₹1,200-2,000 per night, contact +91 481 256 3661. Mid-range accommodation at The Windsor Castle costs ₹3,500-5,500, contact +91 481 256 1651. Luxury option is Backwater Ripples priced ₹8,000-15,000, contact +91 481 252 5777.
+
+Local Transport:
+Auto-rickshaws charge ₹15-25 per km, full-day taxis cost ₹3,000-4,500, KSRTC buses range ₹15-80 depending on distance, and boat rides cost ₹500-2,000 per trip.
+
+Specialty Shopping:
+Rubber products range ₹500-10,000, spices like cardamom cost ₹1,000-1,500 per kg, Malayalam books are priced ₹100-1,000, and handloom textiles range ₹800-5,000.
+
+Emergency Contacts:
+Tourist Helpline: 1364, Kottayam Medical College: +91 481 259 7000, Water Transport: +91 481 256 3460
+                    `
+                },
+                'Kozhikode': {
+                    'Heritage & Culture': `
+**Day 1: Spice Coast Heritage**
+
+**Morning (9:00 AM - 12:00 PM)**
+Begin at Kozhikode Beach, where Vasco da Gama first landed in India. Visit the Kozhikode Lighthouse and explore the historic significance. Walk through the old spice trading areas of Kozhikode.
+
+**Afternoon (1:00 PM - 5:00 PM)**
+Visit the Mishkal Mosque in Kozhikode, showcasing Indo-Saracenic architecture. Explore SM Street (Sweet Meat Street) in Kozhikode for traditional sweets and spices. Visit the Kozhikode Town Hall and cultural center.
+
+**Evening (6:00 PM - 9:00 PM)**
+Enjoy sunset at Kozhikode Beach. Experience traditional Malabar cuisine at a local Kozhikode restaurant. Try the famous Kozhikode biryani and halwa.
+
+**Day 2: Malabar Culture**
+
+**Morning (8:00 AM - 12:00 PM)**
+Visit the Pazhassi Raja Museum in Kozhikode to learn about local history. Explore the Krishna Menon Museum showcasing Kozhikode's heritage. Walk through the heritage buildings of Kozhikode.
+
+**Afternoon (1:00 PM - 5:00 PM)**
+Visit Kappad Beach near Kozhikode, the historic landing site of Vasco da Gama. Explore the stone monument and learn about Portuguese arrival. Enjoy the serene beach atmosphere.
+
+**Evening (6:00 PM - 9:00 PM)**
+Visit local spice markets in Kozhikode. Shop for authentic Malabar spices and traditional items. Enjoy dinner featuring Kozhikode's famous seafood preparations.
+
+**Day 3: Traditional Arts**
+
+**Morning (8:00 AM - 12:00 PM)**
+Visit Thali Temple in Kozhikode, an ancient Hindu temple. Explore the traditional architecture and religious practices. Learn about the cultural significance of Kozhikode temples.
+
+**Afternoon (1:00 PM - 5:00 PM)**
+Experience traditional Theyyam performances (if available) in Kozhikode region. Visit local art centers and craft workshops. Learn about Malabar's unique cultural traditions.
+
+**Evening (6:00 PM - 9:00 PM)**
+Shop for traditional Kozhikode handicrafts and textiles. Enjoy a farewell dinner with authentic Malabar delicacies. Experience the vibrant evening markets of Kozhikode.
+
+**Travel Tips:**
+- Kozhikode is famous for its biryani and halwa
+- Best time to visit: October to March
+- Try local transportation like auto-rickshaws
+- Respect local customs and traditions
+- Don't miss the famous Kozhikode banana chips
+                    `
+                }
+            };
+
+            // Get template based on district and style, with fallback
+            const districtTemplates = templates[formData.district] || templates['Alappuzha'];
+            const template = districtTemplates[formData.travelStyle] || districtTemplates['Heritage & Culture'];
+            
+            // Customize template based on user preferences and group size
+            let customized = template.replace(/Alappuzha/g, formData.district);
+            customized = `Personalized ${formData.district} Itinerary\nGenerated for: ${formData.groupSize} - ${formData.travelStyle} style, ${formData.budget} budget\n\n${customized}`;
+            
+            // Modify based on group size
+            customized = adjustForGroupSize(customized, formData.groupSize);
+            
+            // Remove the API credits note
+            
+            return customized;
+        }
+
+        function adjustForGroupSize(itinerary, groupSize) {
+            let modifiedItinerary = itinerary;
+            
+            if (groupSize === 'Solo Traveler') {
+                // Add solo-friendly notes
+                modifiedItinerary = modifiedItinerary.replace(
+                    /(accommodation|hotel|stay)/gi,
+                    '$1 (Solo traveler friendly - single occupancy available)'
+                );
+                modifiedItinerary += `\n\nSolo Travel Tips:\n- Many restaurants offer counter seating for solo diners\n- Join group tours for social interaction\n- Stay in well-reviewed accommodations for safety`;
+                
+            } else if (groupSize === 'Couple') {
+                // Add romantic spots
+                modifiedItinerary = modifiedItinerary.replace(
+                    /evening \([^)]+\)/gi,
+                    (match) => match + '\nPerfect time for romantic sunset views and couple photography.'
+                );
+                modifiedItinerary += `\n\nCouple Special:\n- Request candlelight dinners at restaurants\n- Book couple spa treatments\n- Ask for rooms with scenic views`;
+                
+            } else if (groupSize === 'Family') {
+                // Add family-friendly notes
+                modifiedItinerary = modifiedItinerary.replace(
+                    /(park|beach|museum)/gi,
+                    '$1 (Family & kid-friendly)'
+                );
+                modifiedItinerary += `\n\nFamily Tips:\n- Most attractions have facilities for children\n- Restaurants offer kid-friendly meals\n- Book family rooms or connecting rooms`;
+                
+            } else if (groupSize === 'Large Group') {
+                // Add group activity notes
+                modifiedItinerary = modifiedItinerary.replace(
+                    /(restaurant|accommodation)/gi,
+                    '$1 (Group bookings available - advance reservation recommended)'
+                );
+                modifiedItinerary += `\n\nLarge Group Tips:\n- Make advance reservations for all activities\n- Consider hiring a private guide\n- Book group transportation for convenience`;
+            }
+            
+            return modifiedItinerary;
+        }
+
+        function displayItinerary(itinerary) {
+            document.getElementById('loadingState').style.display = 'none';
+            
+            // Parse the itinerary and format it nicely
+            const formattedItinerary = formatItinerary(itinerary);
+            
+            document.getElementById('itineraryResult').innerHTML = formattedItinerary;
+            document.getElementById('itineraryResult').classList.add('show');
+        }
+
+        function formatItinerary(itinerary) {
+            // Split itinerary by days and format
+            const lines = itinerary.split('\n');
+            let formattedHtml = '<h3>🌟 Your Personalized Kerala Itinerary</h3>';
+            
+            let currentDay = '';
+            let currentContent = '';
+            
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.toLowerCase().includes('day 1') || line.toLowerCase().includes('day 2') || line.toLowerCase().includes('day 3')) {
+                    if (currentDay) {
+                        formattedHtml += `
+                            <div class="day-card">
+                                <div class="day-header">${currentDay}</div>
+                                ${currentContent}
+                            </div>
+                        `;
+                    }
+                    currentDay = line;
+                    currentContent = '';
+                } else if (line.toLowerCase().includes('morning (') || line.toLowerCase().includes('afternoon (') || line.toLowerCase().includes('evening (')) {
+                    if (line) {
+                        currentContent += `
+                            <div class="time-slot">
+                                <h4>${line}</h4>
+                            </div>
+                        `;
+                    }
+                } else if (line && !line.startsWith('**') && line.length > 10) {
+                    currentContent += `<div class="description-text">${line}</div>`;
+                }
+            });
+            
+            // Add the last day
+            if (currentDay) {
+                formattedHtml += `
+                    <div class="day-card">
+                        <div class="day-header">${currentDay}</div>
+                        ${currentContent}
+                    </div>
+                `;
+            }
+            
+            // If parsing failed, show raw content
+            if (!currentDay) {
+                formattedHtml += `<div class="day-card"><pre style="white-space: pre-wrap; font-family: Georgia, serif;">${itinerary}</pre></div>`;
+            }
+            
+            // Add download button
+            formattedHtml += `
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="downloadItinerary()" style="background: var(--gold); color: var(--primary-brown); border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                        📥 Download Itinerary
+                    </button>
+                </div>
+            `;
+            
+            return formattedHtml;
+        }
+
+        function downloadItinerary() {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            // Get itinerary content directly from the HTML
+            const itineraryElement = document.getElementById('itineraryResult');
+            
+            // Function to preserve rupee symbols and special characters
+            function preserveSpecialChars(text) {
+                return text.replace(/₹/g, 'Rs.').replace(/–/g, '-').replace(/'/g, "'");
+            }
+            
+            // Page setup
+            const pageWidth = pdf.internal.pageSize.width;
+            const pageHeight = pdf.internal.pageSize.height;
+            const margin = 20;
+            const contentWidth = pageWidth - (margin * 2);
+            
+            // Header section
+            pdf.setFillColor(62, 39, 35);
+            pdf.rect(0, 0, pageWidth, 50, 'F');
+            
+            pdf.setFontSize(24);
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFont('helvetica', 'bold');
+            const titleText = 'Kerala Tourism Itinerary';
+            const titleWidth = pdf.getTextWidth(titleText);
+            pdf.text(titleText, (pageWidth - titleWidth) / 2, 25);
+            
+            pdf.setFontSize(12);
+            pdf.setTextColor(212, 165, 116);
+            const subtitleText = 'Generated by Kerala Heritage Explorer';
+            const subtitleWidth = pdf.getTextWidth(subtitleText);
+            pdf.text(subtitleText, (pageWidth - subtitleWidth) / 2, 35);
+            
+            pdf.setDrawColor(212, 165, 116);
+            pdf.setLineWidth(2);
+            pdf.line(margin, 55, pageWidth - margin, 55);
+            
+            let yPosition = 70;
+            
+            // Process each element from the HTML directly
+            const dayCards = itineraryElement.querySelectorAll('.day-card');
+            
+            dayCards.forEach((dayCard, dayIndex) => {
+                // Day header
+                const dayHeader = dayCard.querySelector('.day-header');
+                if (dayHeader) {
+                    if (yPosition > pageHeight - 60) {
+                        pdf.addPage();
+                        yPosition = 30;
+                    }
+                    
+                    yPosition += 15;
+                    pdf.setFillColor(62, 39, 35);
+                    pdf.rect(margin, yPosition - 8, contentWidth, 18, 'F');
+                    
+                    pdf.setFontSize(16);
+                    pdf.setTextColor(255, 255, 255);
+                    pdf.setFont('helvetica', 'bold');
+                    
+                    const dayText = dayHeader.textContent.trim();
+                    const dayTextWidth = pdf.getTextWidth(dayText);
+                    pdf.text(dayText, (pageWidth - dayTextWidth) / 2, yPosition + 4);
+                    yPosition += 25;
+                }
+                
+                // Process time slots with their descriptions immediately after each
+                const timeSlots = dayCard.querySelectorAll('.time-slot');
+                const descriptions = dayCard.querySelectorAll('.description-text');
+                
+                timeSlots.forEach((timeSlot, timeIndex) => {
+                    // Time slot header
+                    const timeHeader = timeSlot.querySelector('h4');
+                    if (timeHeader) {
+                        if (yPosition > pageHeight - 40) {
+                            pdf.addPage();
+                            yPosition = 30;
+                        }
+                        
+                        yPosition += 10;
+                        pdf.setFillColor(62, 39, 35);
+                        pdf.rect(margin, yPosition - 6, contentWidth, 14, 'F');
+                        
+                        pdf.setFontSize(12);
+                        pdf.setTextColor(255, 255, 255);
+                        pdf.setFont('helvetica', 'bold');
+                        
+                        const timeText = timeHeader.textContent.trim();
+                        const timeTextWidth = pdf.getTextWidth(timeText);
+                        pdf.text(timeText, (pageWidth - timeTextWidth) / 2, yPosition + 2);
+                        yPosition += 20;
+                        
+                        // Add corresponding description immediately after this time slot
+                        if (descriptions[timeIndex]) {
+                            if (yPosition > pageHeight - 30) {
+                                pdf.addPage();
+                                yPosition = 30;
+                            }
+                            
+                            pdf.setFontSize(11);
+                            pdf.setTextColor(50, 50, 50);
+                            pdf.setFont('helvetica', 'normal');
+                            
+                            const text = preserveSpecialChars(descriptions[timeIndex].textContent.trim());
+                            
+                            // Split into sentences for better formatting
+                            const sentences = text.split(/(?<=[.!?])\s+/);
+                            
+                            sentences.forEach((sentence, sentIndex) => {
+                                if (yPosition > pageHeight - 25) {
+                                    pdf.addPage();
+                                    yPosition = 30;
+                                }
+                                
+                                const cleanSentence = sentence.trim();
+                                if (cleanSentence) {
+                                    const wrappedSentence = pdf.splitTextToSize(cleanSentence, contentWidth - 20);
+                                    
+                                    wrappedSentence.forEach(line => {
+                                        if (yPosition > pageHeight - 25) {
+                                            pdf.addPage();
+                                            yPosition = 30;
+                                        }
+                                        pdf.text(line, margin + 10, yPosition);
+                                        yPosition += 7;
+                                    });
+                                    
+                                    // Add small gap between sentences
+                                    if (sentIndex < sentences.length - 1) {
+                                        yPosition += 2;
+                                    }
+                                }
+                            });
+                            yPosition += 15;
+                        }
+                    }
+                });
+            });
+            
+            // Footer
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                
+                pdf.setFillColor(248, 248, 248);
+                pdf.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+                
+                pdf.setDrawColor(212, 165, 116);
+                pdf.setLineWidth(1);
+                pdf.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+                
+                pdf.setFontSize(8);
+                pdf.setTextColor(120, 120, 120);
+                pdf.text('Kerala Tourism | www.keralatourism.org', margin, pageHeight - 10);
+                
+                const pageText = `Page ${i} of ${totalPages}`;
+                const pageTextWidth = pdf.getTextWidth(pageText);
+                pdf.text(pageText, pageWidth - margin - pageTextWidth, pageHeight - 10);
+            }
+            
+            const district = document.getElementById('district').value || 'Kerala';
+            const currentDate = new Date().toISOString().split('T')[0];
+            pdf.save(`${district}-Travel-Itinerary-${currentDate}.pdf`);
+        }
+
+        // Auto-fill district if passed via URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const district = urlParams.get('district');
+        if (district) {
+            document.getElementById('district').value = district;
+        }
+    </script>
+</body>
+</html>

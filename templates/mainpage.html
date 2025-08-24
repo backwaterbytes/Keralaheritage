@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kerala 3D Map Interactive Website</title>
+    <style>
+
+        .bar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                background-image: url("{{ url_for('static', filename='Bar.png') }}");
+                background-size: 100% 100%;
+                background-position: center;
+                height: 200px;
+                width: 100%;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: flex-end;
+                border-top: #492903;
+                border-width: 10px 0px 0px 0px;
+                transition: transform 0.75s;
+                z-index: 9999;
+                pointer-events: auto;
+            }
+
+            .bar.collapsed {
+                transform: translateY(90%);
+            }
+
+            button:hover {
+                filter: brightness(1.1);
+            }
+
+            button:active {
+                filter: brightness(1);
+            }
+
+            .learn_btn {
+                background-image: url("{{ url_for('static', filename='learn.png') }}");
+                background-size: 100% 100%;
+                background-position: center;
+                border: none;
+                border-radius: 10px;
+                margin: 15px 20px 0px 0px;
+                padding: 80px 80px 0px 0px;
+                transition: opacity 0.3s ease, filter 0.3s ease;
+            }
+            
+            .learn_btn:disabled {
+                opacity: 0.3;
+                filter: grayscale(100%);
+                cursor: not-allowed;
+            }
+
+            .quiz_btn {
+                background-image: url("{{ url_for('static', filename='quiz.png') }}");
+                background-size: 100% 100%;
+                background-position: center;
+                border: none;
+                border-radius: 10px;
+                margin: 15px 20px 0px 0px;
+                padding: 80px 80px 0px 0px;
+                z-index: 9999999;
+                transition: opacity 0.3s ease, filter 0.3s ease;
+            }
+            
+            .quiz_btn:disabled {
+                opacity: 0.3;
+                filter: grayscale(100%);
+                cursor: not-allowed;
+            }
+
+            .preview {
+                margin: 0px 830px 10px 0px;
+                color: #6e3702;
+                text-align: left;
+                width: 500px;
+                opacity: 1;
+                transition: opacity 0.3s ease;
+            }
+            
+            .preview.inactive {
+                opacity: 0.3;
+                color: #999;
+            }
+
+            .drop {
+                z-index: 9999;
+                position: fixed;
+                bottom: 200px;
+                left: 96.5vh;
+                padding: 2px 20px;
+                border-radius: 20px 20px 0px 0px;
+                text-align: center;
+                transition: transform 0.75s;
+            }
+
+            .drop.collapsed {
+                transform: translateY(780%);
+            }
+
+            .backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.55);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.35s ease;
+            }
+
+            .backdrop.show {
+                pointer-events: auto;
+                opacity: 1;
+            }
+
+            .window {
+                position: relative;
+                width: min(900px, 92vw);
+                height: min(75vh, 800px);
+                border-radius: 22px;
+                box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+                overflow: hidden;
+                background: #111;
+                color: #fff;
+                display: flex;
+                flex-direction: column;
+                backdrop-filter: blur(2px);
+                background-size: cover;
+                background-position: center;
+                background-image: url("{{ url_for('static', filename='Window.png') }}");
+
+                transform: translateY(100%);
+                transition: transform 0.45s ease;
+            }
+
+            .close_btn_btn {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: 38px;
+                height: 38px;
+                border: none;
+                border-radius: 10px;
+                background: rgba(0,0,0,0.45);
+                color: #fff;
+                font-size: 20px;
+                cursor: pointer;
+            }
+
+            .close_btn_btn:hover { filter: brightness(1.15); }
+
+            .window_inner {
+                padding: 20px 22px 10px;
+                overflow: hidden;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .window_title {
+                margin: 0 0 8px 0;
+                font-size: 22px;
+                font-weight: 700;
+            }
+
+            .window_content {
+                font-size: 24px;
+                line-height: 1.6;
+                overflow-y: auto;
+                padding-right: 6px;
+                flex: 1;
+            }
+
+            .navigation {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 14px;
+                padding: 12px;
+                background: linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0));
+            }
+
+            .navigation_button {
+                width: 46px;
+                height: 38px;
+                border: none;
+                border-radius: 10px;
+                background: rgba(0,0,0,0.45);
+                color: #fff;
+                cursor: pointer;
+                font-size: 18px;
+            }
+
+            .navigation_button:disabled { opacity: 0.4; cursor: default; }
+
+            .page_indicator {
+                min-width: 72px;
+                text-align: center;
+                font-weight: 700;
+            }
+
+            .backdrop.show .window {
+                transform: translateY(0);
+            }
+            
+            .quiz-option {
+                display: block;
+                width: 96%;
+                padding: 14px;
+                margin: 10px 0;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                background: #f5f5f5;
+                color: black;
+                text-align: left;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .quiz-option.correct {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+            }
+
+            .quiz-option.wrong {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+            }
+
+            .quiz-option.fade-correct {
+            animation: fadeGreen 1s forwards;
+            }
+
+            @keyframes fadeGreen {
+            from { background: #f5f5f5; border-color: #ccc; }
+            to { background: #28a745; color: white; border-color: #28a745; }
+            }
+
+            .quiz-next {
+            margin-top: 20px;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #6c63ff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            }
+
+            .quiz-next:disabled {
+            background: #999;
+            cursor: not-allowed;
+            }
+
+
+
+
+        :root{
+          --bg0:#03101b; /* deep */
+          --bg1:#062235; /* mid */
+          --accent:#18b4ff;
+        }
+        *{box-sizing:border-box}
+        html,body{height:100%; overflow-x: hidden;}
+        body{
+          margin:0;
+          background-image: url('/static/Brown Vintage Paper Group Project Presentation.png');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          background-attachment: fixed;
+          color:#e7f6ff;
+          font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+        }
+        #container{ width:100vw; height:100vh; position:relative; opacity:0; transform: translateY(10px); transition: opacity 1.2s ease, transform 1.2s ease; }
+        /* soft vignette */
+        #container::after{
+          content:""; position:absolute; inset:0; pointer-events:none;
+          background: radial-gradient(1200px 1200px at 50% 50%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.25) 100%);
+          mix-blend-mode:multiply; opacity:.55;
+        }
+        /* glass UI */
+        .hud{ position:fixed; inset:24px auto auto 24px; z-index:10; pointer-events:none; }
+        .card{ pointer-events:auto; backdrop-filter: blur(8px); background:rgba(62,39,35,.85); border:1px solid rgba(21,11,9,.5); border-radius:14px; padding:12px 14px; box-shadow:0 10px 30px rgba(21,11,9,.45); color:#F1E7D3; }
+        .title{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.3px; color:#F1E7D3; }
+        .pill{ display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(212,165,116,.2); border:1px solid rgba(241,231,211,.25); color:#F1E7D3; }
+        .hint{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%); font-size:12px; opacity:.95; letter-spacing:.3px; color:#F1E7D3; }
+        .hint .card{ background:rgba(62,39,35,.85); border-color: rgba(21,11,9,.5); color:#F1E7D3; }
+        a{ color:#5D4037; text-decoration:none; border-bottom:1px dotted rgba(93,64,55,.4); }
+        a:hover{ color:#3E2723 }
+        
+        /* HUD + hint staged entrance */
+        .hud .card, .hint { opacity: 0; transform: translateY(6px); transition: opacity .6s ease, transform .6s ease; }
+        .hud.show .card, .hint.show { opacity: 1; transform: translateY(0); }
+        /* Position HUD top-left and left align */
+        .hud { position: fixed; top: 24px; left: 24px; right: auto; bottom: auto; transform: none; text-align: left; z-index: 1500; height: auto; }
+        .hud .card { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+        .hud .subtitle { font-size: 12px; color: #F1E7D3; opacity: .95; letter-spacing: .3px; }
+        /* Hide old hint (merged into HUD) */
+        .hint { display: none !important; }
+
+        /* Plan My Trip Button */
+        .plan-trip-btn {
+            position: fixed;
+            top: 50%;
+            right: 24px;
+            transform: translateY(-50%);
+            z-index: 1500;
+            opacity: 0;
+            transform: translateY(-50%) translateX(100px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .plan-trip-btn.show {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .plan-trip-btn button {
+            background: var(--gold, #D4A574);
+            color: var(--primary-brown, #3E2723);
+            border: 3px solid var(--primary-brown, #3E2723);
+            padding: 16px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(62,39,35,.25);
+            transition: all 0.3s ease;
+            font-family: Georgia, serif;
+        }
+
+        .plan-trip-btn button:hover {
+            background: var(--primary-brown, #3E2723);
+            color: var(--cream, #F1E7D3);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(62,39,35,.35);
+        }
+
+        .plan-trip-btn svg {
+            flex-shrink: 0;
+        }
+
+        /* Back-to-landing button (hidden per request) */
+        #back-to-landing { position: fixed; right: 24px; bottom: 24px; width: 48px; height: 48px; border-radius: 999px; border: 3px solid #fff; background: rgba(62,39,35,.9); color: #F1E7D3; display: none !important; align-items: center; justify-content: center; box-shadow: 0 10px 28px rgba(21,11,9,.45); cursor: pointer; z-index: 2000; opacity: 0; transform: translateY(6px); transition: opacity .5s ease, transform .5s ease; }
+        #back-to-landing.show { opacity: 1; transform: translateY(0); }
+        #back-to-landing svg { display: block }
+        
+        /* Cultural Bubbles */
+        .cultural-bubbles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            /* Move bubbles up to be visible above the bar */
+            transform: translateY(-100px);
+        }
+        
+        .bubble {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            backdrop-filter: blur(15px);
+            background: rgba(212, 165, 116, 0.2);
+            border: 3px solid rgba(62, 39, 35, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 12px 48px rgba(62, 39, 35, 0.25);
+            transform: scale(0) rotate(180deg);
+            opacity: 0;
+        }
+        
+        .plan-trip-bubble {
+            background: rgba(212, 165, 116, 0.4);
+            border: 3px solid rgba(62, 39, 35, 0.8);
+            box-shadow: 0 12px 48px rgba(62, 39, 35, 0.35);
+        }
+        
+        .plan-trip-bubble:hover {
+            background: rgba(212, 165, 116, 0.6);
+            transform: scale(1.15) rotate(0deg);
+        }
+        
+        .bubble.show {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+        }
+        
+        .bubble:hover {
+            transform: scale(1.1) rotate(0deg);
+            background: rgba(212, 165, 116, 0.3);
+            border-color: rgba(62, 39, 35, 0.8);
+            box-shadow: 0 12px 40px rgba(62, 39, 35, 0.3);
+        }
+        
+        .bubble-icon {
+            font-size: 56px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        .bubble-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(62, 39, 35, 0.4);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        /* District pins (name labels with small dots) */
+        .district-pins { position: fixed; inset: 0; pointer-events: none; z-index: 1200; opacity: 0; }
+        .district-pin { position: absolute; }
+        .district-pin .dot { position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); width: 8px; height: 8px; border-radius: 50%; background: #D4A574; border: 2px solid #3E2723; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+        .district-pin .label { position: absolute; left: 12px; top: 0; transform: translateY(-50%); font-size: 11px; padding: 4px 6px; border-radius: 6px; background: rgba(241,231,211,.9); border: 1px solid rgba(62,39,35,.3); color:#3E2723; white-space: nowrap; }
+        .district-pin.inactive { opacity: 0.75; filter: saturate(.9); }
+        .district-pin.active { opacity: 1; }
+        
+        .bubble-label {
+            position: absolute;
+            top: 175px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #3E2723;
+            background: rgba(212,165,116,.8);
+            padding: 6px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .bubble:hover .bubble-label {
+            opacity: 1;
+        }
+        
+
+
+        /* Page fade-out for smooth navigation */
+        body { transition: opacity .8s ease; }
+        body.page-fade-out { opacity: 0; }
+
+    </style>
+    <style>
+        /* Hide Webflow badge robustly */
+        .w-webflow-badge, .w-webflow-badge * { display: none !important; visibility: hidden !important; pointer-events: none !important; }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <!-- District pins overlay -->
+    <div id="districtPins" class="district-pins"></div>
+    <div class="hud">
+      <div class="card">
+        <div class="title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <path d="M12 3l1.8 3.6 4 .6-2.9 2.8.7 4-3.6-1.9-3.6 1.9.7-4L6.2 7.2l4-.6L12 3z" stroke="currentColor" fill="none" stroke-width="1.6"/>
+          </svg>
+          Kerala 3D Map
+          <span class="pill">Interactive • Particles</span>
+        </div>
+        <div class="subtitle">Hover to lift districts • Click a district to focus • Click empty space to reset</div>
+      </div>
+    </div>
+
+    <!-- Plan My Trip Button removed per request -->
+    <div class="hint">
+      <div class="card">Hover to lift districts • Click a district to focus • Click empty space to reset</div>
+    </div>
+
+    <!-- Cultural Bubbles Container -->
+    <div id="culturalBubbles" class="cultural-bubbles">
+        <div class="bubble" data-culture="dance" data-index="0">
+            <img class="bubble-image" src="" alt="Loading..." style="display: none;">
+            <div class="bubble-icon">💃</div>
+            <div class="bubble-label">Traditional Dance</div>
+        </div>
+        <div class="bubble" data-culture="music" data-index="1">
+            <img class="bubble-image" src="" alt="Loading..." style="display: none;">
+            <div class="bubble-icon">🎵</div>
+            <div class="bubble-label">Classical Music</div>
+        </div>
+        <div class="bubble" data-culture="food" data-index="2">
+            <img class="bubble-image" src="" alt="Loading..." style="display: none;">
+            <div class="bubble-icon">🍛</div>
+            <div class="bubble-label">Kerala Cuisine</div>
+        </div>
+        <div class="bubble" data-culture="art" data-index="3">
+            <img class="bubble-image" src="" alt="Loading..." style="display: none;">
+            <div class="bubble-icon">🎨</div>
+            <div class="bubble-label">Traditional Art</div>
+        </div>
+    </div>
+
+            <div class = "bar collapsed">
+            <div class="preview"></div>
+            <button class = "learn_btn" onclick="learn()" disabled></button>
+            <button class = "quiz_btn" onclick="quiz()" disabled></button>
+
+        </div>
+
+        <button class = "drop collapsed" onclick="toggle()">▲ Show/Hide</button>
+
+        <div class="backdrop" aria-hidden="true">
+
+            <div class="window" role="dialog" aria-modal="true" aria-labelledby="window_title">
+
+                <button class="close_btn_btn" aria-label="close_btn" onclick = "close_window()">✕</button>
+
+                <div class="window_inner">
+                    <h2 class="window_title"></h2>
+                    <div class="window_content">
+                    </div>
+                </div>
+
+                <div class="navigation">
+                    <button class="navigation_button" aria-label="Previous" onclick="prevPage()">◀</button>
+                    <span class="page_indicator">1 / 1</span>
+                    <button class="navigation_button" aria-label="Next" onclick="nextPage()">▶</button>
+                </div>
+
+            </div>
+        </div>  
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+
+        
+        const drop = document.getElementsByClassName("drop collapsed")[0];
+        const bar = document.getElementsByClassName("bar collapsed")[0];
+
+        function toggle(){
+            bar.classList.toggle("collapsed");
+            drop.classList.toggle("collapsed")
+            drop.innerText = bar.classList.contains("collapsed") ? "▲ Show/Hide" : "▼ Show/Hide";
+        }
+
+        const modal = {
+            pages: [],
+            index: 0,
+            title: '',
+        };
+
+        function changeLearn(learn){
+            lmodal = Learn;
+        }
+
+        const backdrop = document.getElementsByClassName('backdrop')[0];
+        const kcWindow   = document.getElementsByClassName('window')[0];
+        const close_btn    = document.getElementsByClassName('close_btn_btn')[0];
+        const window_title    = document.getElementsByClassName('window_title')[0];
+        const window_content  = document.getElementsByClassName('window_content')[0];
+        const nav_btn_prev     = document.getElementsByClassName('navigation_button')[0];
+        const nav_btn_next     = document.getElementsByClassName('navigation_button')[1];
+        const page_indicator  = document.getElementsByClassName('page_indicator')[0];
+
+        function renderPage() {
+
+            nav_btn_next.style.display = nav_btn_prev.style.display = page_indicator.style.display = "block"
+
+            if (!modal.pages.length) {
+                window_content.innerHTML = '<em>No content</em>';
+                page_indicator.textContent = '0 / 0';
+                nav_btn_prev.disabled = nav_btn_next.disabled = true;
+                return;
+            }
+
+            window_content.innerHTML = modal.pages[modal.index];
+            window_title.textContent = modal.title || '';
+            page_indicator.textContent = (modal.index + 1) + ' / ' + modal.pages.length;
+            nav_btn_prev.disabled = modal.index === 0;
+            nav_btn_next.disabled = modal.index === modal.pages.length - 1;
+        }
+
+        function openModel({ title = '', pages = []} = {}) {
+            modal.pages = pages;
+            modal.index = 0;
+            modal.title = title;
+
+            renderPage();
+            backdrop.classList.add('show');
+        }
+
+        function close_window() {
+            backdrop.classList.remove('show');
+        }
+
+        function nextPage() {
+            if (modal.index < modal.pages.length - 1) {
+                modal.index++;
+                renderPage();
+            }
+        }
+
+        function prevPage() {
+            if (modal.index > 0) {
+                modal.index--;
+                renderPage();
+            }
+        }
+
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) close_window();
+        });
+        
+        // Prevent bar and window clicks from unfocusing districts
+        document.querySelector('.bar').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        document.querySelector('.window').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        document.querySelector('.drop').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') close_window();
+            if (!backdrop.classList.contains('show')) return;
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowLeft') prevPage();
+        });
+
+        var lmodal = {}
+        function learn() {
+            if (!selectedActivity) {
+                alert('Please select an activity first by clicking on one of the cultural bubbles.');
+                return;
+            }
+            // Fetch summary for the currently selected activity
+            getLearnForActivity(selectedActivity);
+            openModel(lmodal);
+        }
+
+
+        var selectedActivity = null; // Will be set when user clicks on a bubble
+        var quizobject;
+        var quizData = [];
+        
+        // Get button references
+        const learn_btn = document.getElementsByClassName('learn_btn')[0];
+        const quiz_btn = document.getElementsByClassName('quiz_btn')[0];
+        const preview_element = document.getElementsByClassName('preview')[0];
+        
+        // Initialize buttons as disabled
+        learn_btn.disabled = true;
+        quiz_btn.disabled = true;
+        preview_element.classList.add('inactive');
+        preview_element.innerText = 'Select an activity to see preview';
+
+function getActivityQuiz(activityName) {
+            if (!activityName) {
+                console.log("No activity selected");
+                return;
+            }
+            
+            fetch("/get_quiz", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ activity: activityName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                quizobject = JSON.parse(JSON.stringify(data));
+                console.log(quizobject)
+                quizData = quizobject;
+                quizobject.forEach((q, i) => quizData[i].answer = q.options.indexOf(q.answer))
+                console.log("Quiz data loaded for:", activityName);
+                })
+            .catch(error => {
+                console.error('Error loading quiz data:', error);
+                quizData = [];
+            });
+            }
+// Quiz data will be loaded when user selects an activity
+
+function getLearnForActivity(activityName){
+            fetch("/get_summary", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ activity: activityName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                data = JSON.parse(JSON.stringify(data));
+                var learning = data.summary;
+                lmodal.title = activityName;
+                console.log(lmodal.title);
+                j = learning.split('#')
+                lmodal.pages = []
+                console.log(j)
+                j.forEach((e, i) => lmodal.pages[i]='<p><strong>' + e.split(':')[0] + "</strong>" + e.split(':')[1] + '</p>')
+            })
+            .catch(error => {
+                console.error('Error loading summary:', error);
+                lmodal.title = activityName;
+                lmodal.pages = [`<p>Unable to load summary for ${activityName}. Please try again.</p>`];
+            });
+}
+
+// No default activity - user must select one
+
+function changePreview(){
+    p = document.getElementsByClassName("preview")[0];
+    fetch('/get_preview', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: selectedActivity })
+    })
+    .then(response => response.json())
+    .then(data => {
+        p.innerText = data.preview;
+    })
+}
+
+// Preview will be set when user selects an activity
+
+  function changeQuiz(quiz){
+    quizData = quiz
+  }
+
+// Function to load bubble images from MongoDB based on district
+function loadBubbleImages(districtName) {
+    fetch('/get_district_images', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ district: districtName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.images && data.images.length > 0) {
+            const bubbles = document.querySelectorAll('.bubble');
+            
+            // Reset all bubbles to show emojis first
+            bubbles.forEach(bubble => {
+                const img = bubble.querySelector('.bubble-image');
+                const icon = bubble.querySelector('.bubble-icon');
+                img.style.display = 'none';
+                icon.style.display = 'block';
+            });
+            
+            // Load images into bubbles (up to 4 images)
+            data.images.slice(0, 4).forEach((imageData, index) => {
+                if (index < bubbles.length) {
+                    const bubble = bubbles[index];
+                    const img = bubble.querySelector('.bubble-image');
+                    const icon = bubble.querySelector('.bubble-icon');
+                    const label = bubble.querySelector('.bubble-label');
+                    
+                    // Set image source using local path
+                    img.src = imageData.imagePath;
+                    img.alt = imageData.name;
+                    
+                    console.log(`Loading image: ${imageData.imagePath} for ${imageData.name}`);
+                    
+                    img.onload = function() {
+                        // Hide emoji and show image
+                        icon.style.display = 'none';
+                        img.style.display = 'block';
+                        // Update label with activity name
+                        label.textContent = imageData.name;
+                        console.log(`Successfully loaded: ${imageData.imagePath}`);
+                    };
+                    
+                    // Add click handler to bubble for preview
+                    bubble.onclick = function(e) {
+                        e.stopPropagation(); // Prevent event bubbling
+                        selectedActivity = imageData.name; // Update selected activity
+                        showActivityPreview(imageData.name);
+                        // Load quiz data for the selected activity
+                        getActivityQuiz(imageData.name);
+                        // Load learn data for the selected activity
+                        getLearnForActivity(imageData.name);
+                        // Enable buttons
+                        enableButtons();
+                        console.log(`Selected activity updated to: ${selectedActivity}`);
+                    };
+                    
+                    img.onerror = function() {
+                        // If image fails to load, keep emoji
+                        console.warn('Failed to load image:', imageData.imagePath, 'for:', imageData.name);
+                        img.style.display = 'none';
+                        icon.style.display = 'block';
+                    };
+                }
+            });
+        } else {
+            console.log('No images found for district:', districtName);
+            // Keep emojis if no images found
+        }
+    })
+    .catch(error => {
+        console.error('Error loading district images:', error);
+        // Keep emojis on error
+    });
+}
+
+// Function to show activity preview when bubble is clicked
+function showActivityPreview(activityName) {
+    const previewElement = document.getElementsByClassName("preview")[0];
+    
+    fetch('/get_preview', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: activityName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.preview) {
+            previewElement.innerText = data.preview;
+            previewElement.classList.remove('inactive');
+            console.log(`Preview updated for: ${activityName}`);
+        } else {
+            previewElement.innerText = `Learn more about ${activityName}`;
+            previewElement.classList.remove('inactive');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading activity preview:', error);
+        previewElement.innerText = `Learn more about ${activityName}`;
+        previewElement.classList.remove('inactive');
+    });
+}
+
+// Function to enable buttons when activity is selected
+function enableButtons() {
+    learn_btn.disabled = false;
+    quiz_btn.disabled = false;
+    learn_btn.style.opacity = 1;
+    quiz_btn.style.opacity = 1;
+}
+
+// Function to disable buttons when no activity is selected
+function disableButtons() {
+    learn_btn.disabled = true;
+    quiz_btn.disabled = true;
+    preview_element.classList.add('inactive');
+    preview_element.innerText = 'Select an activity to see preview';
+}
+
+function quiz() {
+  if (!selectedActivity) {
+    alert('Please select an activity first by clicking on one of the cultural bubbles.');
+    return;
+  }
+  if (!quizData || quizData.length === 0) {
+    alert('Quiz data is still loading. Please try again in a moment.');
+    return;
+  }
+
+  let currentQ = 0;
+  let score = 0;
+
+  function renderQuiz() {
+    nav_btn_next.style.display = nav_btn_prev.style.display = page_indicator.style.display = "none"
+    window_content.style.fontSize = "16px"
+    console.log(quizData)
+    const q = quizData[currentQ];
+    let html = `<div class="quiz-question"><h3>${q.question}</h3></div>`;
+    q.options.forEach((opt, i) => {
+      html += `<div class="quiz-option" data-index="${i}">${opt}</div>`;
+    });
+    html += `<button id="quiz-next" class="quiz-next" disabled>${currentQ < quizData.length - 1 ? 'Next' : 'See Result'}</button>`;
+    window_content.innerHTML = html;
+
+    const optionEls = window_content.querySelectorAll('.quiz-option');
+    const nextBtn = document.getElementById('quiz-next');
+
+    optionEls.forEach(btn => {
+      btn.addEventListener('click', () => {
+        optionEls.forEach(b => b.style.pointerEvents = 'none'); // disable
+        const chosen = parseInt(btn.dataset.index);
+        if (chosen === q.answer) {
+          btn.classList.add("correct");
+          score++;
+        } else {
+          btn.classList.add("wrong");
+          optionEls[q.answer].classList.add("fade-correct");
+        }
+        nextBtn.disabled = false;
+      });
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentQ < quizData.length - 1) {
+        currentQ++;
+        renderQuiz();
+      } else {
+        showResult();
+      }
+    });
+  }
+
+  function showResult() {
+    const percentage = Math.round((score / quizData.length) * 100);
+    let message = "";
+    if (percentage >= 80) {
+      message = "Excellent! You know a lot about this topic!";
+    } else if (percentage >= 60) {
+      message = "Good job! You have a decent understanding.";
+    } else {
+      message = "Keep learning! There's more to discover.";
+    }
+    
+    window_content.innerHTML = `
+      <h2>Quiz Finished!</h2>
+      <p>Your Score: ${score} / ${quizData.length} (${percentage}%)</p>
+      <p>${message}</p>
+      <button class="quiz-next" onclick="close_window()">Close</button>
+    `;
+  }
+
+  openModel({ title: `Quiz: ${selectedActivity}`, pages: [""] }); // open modal first
+  renderQuiz();
+}
+
+
+
+
+        // Set up scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 5000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0); // transparent to show page background
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+        renderer.domElement.style.background = 'transparent';
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.enablePan = false; // keep position fixed
+        controls.rotateSpeed = 0.9;
+        controls.zoomSpeed = 1.0;
+        controls.enableZoom = false; // explicitly disable zoom
+        // Lock orientation: front view, no rotation
+        controls.enableRotate = false;
+        controls.minAzimuthAngle = 0;
+        controls.maxAzimuthAngle = 0;
+        controls.minPolarAngle = Math.PI / 2;
+        controls.maxPolarAngle = Math.PI / 2;
+        // Make both left and right drag rotate, middle wheel zoom
+        controls.mouseButtons = {
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.ROTATE,
+        };
+        // Fully disable controls so map cannot slide at all
+        controls.enabled = false;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 7);
+        scene.add(directionalLight);
+
+        // Start camera somewhere reasonable; it will be adjusted after loading
+        camera.position.set(0, 0, 5);
+
+        // Hover lifting parameters
+        let LIFT_HEIGHT = 0.5; // Adjust lift height as needed (will be scaled to model size after load)
+        const LERP_FACTOR = 0.2; // slower smoothing for a more relaxed feel
+        // Focus animation timings
+        const FOCUS_DELAY_MS = 150; // delay before starting camera focus
+        const FOCUS_DURATION_MS = 1800; // per preference: slower but snappy
+
+        // Collections
+        let model = null;
+        const districts = []; // leaf meshes for raycasting
+        let districtGroups = []; // top-level district groups (that we animate)
+        // Background particles (Two-layer, behind the map)
+        let bgPointsFar = null, bgPointsNear = null;
+        let bgFarBase = null, bgNearBase = null;
+        let bgFarPhase = null, bgNearPhase = null;
+        // Animation timing
+        let lastTimeSec = performance.now()*0.001;
+        // Fade-in state for background and model
+        const districtMats = [];
+        const lineMats = [];
+        let bgFadeStart = null;     // particles/background fade
+        let modelFadeStart = null;  // kerala model fade
+        const BG_FADE_DURATION = 1600;    // ms
+        const MODEL_FADE_DURATION = 5000; // ms (smooth ~5s model fade-in)
+
+        function makeCircleSprite(size = 64, innerAlpha = 1){
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+            g.addColorStop(0, `rgba(255,255,255,${innerAlpha})`);
+            g.addColorStop(0.6, 'rgba(255,255,255,0.25)');
+            g.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI*2); ctx.fill();
+            const tex = new THREE.Texture(c);
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.needsUpdate = true;
+            tex.flipY = false;
+            return tex;
+        }
+
+        function screenScale(){
+            const screenArea = window.innerWidth * window.innerHeight;
+            return Math.max(0.6, Math.min(1.2, screenArea / 2073600));
+        }
+
+        function createBackgroundParticles(maxDim){
+            const areaX = maxDim * 6.0;
+            const areaY = maxDim * 5.0;
+            const depthNear = -maxDim * 0.9;
+            const depthFar  = -maxDim * 3.2;
+
+            // Count scaling by screen area (baseline ~ 1920x1080)
+            const scale = screenScale();
+
+            // Far bokeh layer (soft discs)
+            const farCount = Math.floor(900 * scale);
+            const farPos = new Float32Array(farCount*3);
+            const farPhase = new Float32Array(farCount);
+            for(let i=0;i<farCount;i++){
+                const ix=i*3;
+                farPos[ix+0] = (Math.random()-0.5) * areaX;
+                farPos[ix+1] = (Math.random()-0.5) * areaY;
+                farPos[ix+2] = depthFar + Math.random()*(depthNear - depthFar);
+                farPhase[i] = Math.random()*Math.PI*2;
+            }
+            const farGeom = new THREE.BufferGeometry();
+            farGeom.setAttribute('position', new THREE.BufferAttribute(farPos,3));
+            const farMat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 7.5,
+                map: makeCircleSprite(64, 0.85),
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.0,
+                depthWrite: false,
+                depthTest: true,
+                blending: THREE.AdditiveBlending,
+                alphaTest: 0.01
+            });
+            farMat.userData = farMat.userData || {}; farMat.userData.targetOpacity = 0.16;
+            bgPointsFar = new THREE.Points(farGeom, farMat);
+            bgPointsFar.renderOrder = -1002;
+            scene.add(bgPointsFar);
+            bgFarBase = farPos.slice(0);
+            bgFarPhase = farPhase;
+
+            // Near crisp layer (small dots)
+            const nearCount = Math.floor(1600 * scale);
+            const nearPos = new Float32Array(nearCount*3);
+            const nearPhase = new Float32Array(nearCount);
+            for(let i=0;i<nearCount;i++){
+                const ix=i*3;
+                nearPos[ix+0] = (Math.random()-0.5) * areaX * 0.9;
+                nearPos[ix+1] = (Math.random()-0.5) * areaY * 0.9;
+                nearPos[ix+2] = depthNear - Math.random()*maxDim*0.6; // slightly deeper than far to distribute
+                nearPhase[i] = Math.random()*Math.PI*2;
+            }
+            const nearGeom = new THREE.BufferGeometry();
+            nearGeom.setAttribute('position', new THREE.BufferAttribute(nearPos,3));
+            const nearMat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 2.0,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.0,
+                depthWrite: false,
+                depthTest: true,
+                blending: THREE.AdditiveBlending
+            });
+            nearMat.userData = nearMat.userData || {}; nearMat.userData.targetOpacity = 0.45;
+            bgPointsNear = new THREE.Points(nearGeom, nearMat);
+            bgPointsNear.renderOrder = -1000; // above lines, still behind map
+            scene.add(bgPointsNear);
+            bgNearBase = nearPos.slice(0);
+            bgNearPhase = nearPhase;
+        }
+
+        function updateBackgroundParticles(t){
+            // Far layer
+            if (bgPointsFar){
+                const arr = bgPointsFar.geometry.attributes.position.array;
+                const base = bgFarBase; const ph = bgFarPhase; const n = ph.length;
+                for(let i=0;i<n;i++){
+                    const ix=i*3; const p=ph[i];
+                    const wob=0.9, wobZ=0.5;
+                    arr[ix+0] = base[ix+0] + wob * Math.sin(t*0.25 + p);
+                    arr[ix+1] = base[ix+1] + wob * Math.cos(t*0.2 + p*1.07);
+                    arr[ix+2] = base[ix+2] + wobZ * Math.sin(t*0.18 + p*0.6);
+                }
+                bgPointsFar.geometry.attributes.position.needsUpdate = true;
+                bgPointsFar.rotation.z = 0.03 * Math.sin(t*0.1);
+            }
+            // Near layer
+            if (bgPointsNear){
+                const arr = bgPointsNear.geometry.attributes.position.array;
+                const base = bgNearBase; const ph = bgNearPhase; const n = ph.length;
+                for(let i=0;i<n;i++){
+                    const ix=i*3; const p=ph[i];
+                    const wob=0.7, wobZ=0.35;
+                    arr[ix+0] = base[ix+0] + wob * Math.sin(t*0.6 + p);
+                    arr[ix+1] = base[ix+1] + wob * Math.cos(t*0.5 + p*1.11);
+                    arr[ix+2] = base[ix+2] + wobZ * Math.sin(t*0.4 + p*0.7);
+                }
+                bgPointsNear.geometry.attributes.position.needsUpdate = true;
+                bgPointsNear.rotation.z = -0.04 * Math.sin(t*0.12);
+            }
+        }
+
+        // Simple function placeholder - no complex animations
+        function createStylishAnimations(maxDim){
+            // Only keep basic lighting - no complex animations
+        }
+
+        function updateStylishAnimations(t){
+            // Only breathe after initial fades have completed
+            if (bgFadeStart === null) {
+                if (bgPointsFar && bgPointsFar.material) {
+                    const tgt = bgPointsFar.material.userData?.targetOpacity ?? 0.16;
+                    bgPointsFar.material.opacity = tgt + 0.05 * Math.sin(t * 0.3);
+                }
+                if (bgPointsNear && bgPointsNear.material) {
+                    const tgt = bgPointsNear.material.userData?.targetOpacity ?? 0.45;
+                    bgPointsNear.material.opacity = tgt + 0.08 * Math.sin(t * 0.4);
+                }
+            }
+        }
+        // Home view reference (set after framing the model)
+        const HOME = {
+            pos: new THREE.Vector3(),
+            target: new THREE.Vector3(),
+            set(p, t) { this.pos.copy(p); this.target.copy(t); }
+        };
+
+        // Raycaster for hover detection
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let hoveredDistrict = null;
+        const animNodes = new Set(); // nodes we animate up/down
+        const HOVER_DELAY_MS = 0.0001; // no delay; lift instantly on hover
+        let hoverIntentTimer = null;
+        let hoverIntentTarget = null;
+        let pendingFocusTimer = null; // start-delay timer for camera focus
+        // Focus state: when true, hovering won't lift any districts
+        let isFocused = false;
+        let focusedGroup = null;
+        // Pins overlay system
+        const pinSystem = {
+            container: null,
+            items: [],
+            // Map district IDs to human names
+            nameMap: {
+                'district': 'Alappuzha',
+                '004': 'Kasargod',
+                '003': 'Kannur',
+                '013': 'Wayanad',
+                '007': 'Kozhikode',
+                '008': 'Malappuram',
+                '009': 'Palakkad',
+                '012': 'Thrissur',
+                '001': 'Ernakulam',
+                '002': 'Idukki',
+                '006': 'Kottayam',
+                '014': 'Alappuzha',
+                '010': 'Pathanamthitta',
+                '005': 'Kollam',
+                '011': 'Thiruvananthapuram'
+            },
+            // Build a reverse lookup of lowercase name -> id on demand
+            getReverseNameMap(){
+                if (!this._reverseNameMap) {
+                    this._reverseNameMap = Object.fromEntries(
+                        Object.entries(this.nameMap).map(([id, name]) => [String(name).toLowerCase(), id])
+                    );
+                }
+                return this._reverseNameMap;
+            },
+            init(groups){
+                this.container = document.getElementById('districtPins');
+                if (!this.container) return;
+                this.container.innerHTML = '';
+                this.items = groups.map(g => {
+                    const el = document.createElement('div');
+                    el.className = 'district-pin inactive';
+                    const dot = document.createElement('span'); dot.className = 'dot';
+                    const label = document.createElement('span'); label.className = 'label';
+                    // Extract a numeric id (1-3 digits), zero-pad to 3, try group and its children
+                    const getIdFromName = (name) => {
+                        const mm = (name || '').match(/(\d{1,3})/);
+                        return mm ? mm[1].padStart(3, '0') : null;
+                    };
+                    const reverse = this.getReverseNameMap();
+                    let id = getIdFromName(g.name);
+                    if (!id) {
+                        g.traverse && g.traverse((child) => {
+                            if (!id) id = getIdFromName(child.name);
+                        });
+                    }
+                    // Fallback: try to match by known district names embedded in node names
+                    if (!id) {
+                        const tryMatch = (nm) => {
+                            const lower = String(nm || '').toLowerCase();
+                            for (const districtName in reverse) {
+                                if (lower.includes(districtName)) { return reverse[districtName]; }
+                            }
+                            return null;
+                        };
+                        id = tryMatch(g.name);
+                        if (!id && g.traverse) {
+                            g.traverse((child)=>{ if (!id) id = tryMatch(child.name); });
+                        }
+                    }
+                    // If still not found, and node names include the generic word 'district', map via special key
+                    if (!id) {
+                        const hasDistrictTag = (nm) => String(nm || '').toLowerCase().includes('district');
+                        let tagged = hasDistrictTag(g.name);
+                        if (!tagged && g.traverse) {
+                            g.traverse((child)=>{ if (!tagged) tagged = hasDistrictTag(child.name); });
+                        }
+                        if (tagged && this.nameMap['district']) id = 'district';
+                    }
+                    const readable = (id && this.nameMap[id]) ? this.nameMap[id] : ((g.name && g.name.trim()) ? g.name : 'District');
+                    label.textContent = readable;
+                    el.appendChild(dot); el.appendChild(label);
+                    this.container.appendChild(el);
+                    return { group: g, el, id, label };
+                });
+            },
+            update(){
+                if (!this.items || this.items.length === 0) return;
+                const proj = new THREE.Vector3();
+                const ndc = new THREE.Vector2();
+                this.items.forEach(item => {
+                    // compute world-space center of the group
+                    const box = new THREE.Box3().setFromObject(item.group);
+                    const center = box.getCenter(new THREE.Vector3());
+                    proj.copy(center).project(camera);
+                    // if behind camera, hide
+                    if (proj.z > 1) { item.el.style.display = 'none'; return; }
+                    item.el.style.display = 'inline-flex';
+
+                    // Raycast from camera through a small neighborhood around projected center
+                    // to ensure the dot lands on the district surface (inside, not on borders)
+                    const OFF = 0.02; // ~2% of NDC
+                    const candidates = [
+                        [0,0],[OFF,0],[-OFF,0],[0,OFF],[0,-OFF],[OFF,OFF],[-OFF,OFF],[OFF,-OFF],[-OFF,-OFF]
+                    ];
+                    let hitPoint = null;
+                    for (let i=0;i<candidates.length;i++){
+                        const dx = candidates[i][0], dy = candidates[i][1];
+                        ndc.set(
+                            THREE.MathUtils.clamp(proj.x + dx, -1, 1),
+                            THREE.MathUtils.clamp(proj.y + dy, -1, 1)
+                        );
+                        raycaster.setFromCamera(ndc, camera);
+                        const hits = raycaster.intersectObject(item.group, true);
+                        if (hits && hits.length){ hitPoint = hits[0].point.clone(); break; }
+                    }
+                    let sx, sy;
+                    if (hitPoint){
+                        const sp = hitPoint.clone().project(camera);
+                        sx = (sp.x * 0.5 + 0.5) * window.innerWidth;
+                        sy = (-sp.y * 0.5 + 0.5) * window.innerHeight;
+                    } else {
+                        // Fallback: projected center
+                        sx = (proj.x * 0.5 + 0.5) * window.innerWidth;
+                        sy = (-proj.y * 0.5 + 0.5) * window.innerHeight;
+                    }
+                    item.el.style.left = sx + 'px';
+                    item.el.style.top = sy + 'px';
+
+                    // active state for hovered or focused
+                    const active = (item.group === focusedGroup) || (item.group === hoveredDistrict);
+                    item.el.classList.toggle('active', active);
+                    item.el.classList.toggle('inactive', !active);
+                });
+            }
+        };
+
+        // Cultural Bubbles System
+        const culturalBubbles = {
+            container: null,
+            bubbles: [],
+            isVisible: false,
+            currentDistrict: null,
+            
+            init() {
+                this.container = document.getElementById('culturalBubbles');
+                this.bubbles = Array.from(this.container.querySelectorAll('.bubble'));
+                
+this.bubbles.forEach((bubble, index) => {
+    bubble.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        // 🔢 Map bubble index → quadrant number
+        // index 0 → quadrant 3 (bottom-left)
+        // index 1 → quadrant 4 (bottom-right)
+        // index 2 → quadrant 2 (top-left)
+        // index 3 → quadrant 1 (top-right)
+        const indexToQuadrant = [3, 4, 2, 1];
+        const bubbleNumber = indexToQuadrant[index];
+
+        // 📍 Get the district name (fallback if missing)
+        const districtName = this.currentDistrict?.name || "Unknown District";
+
+        // 📞 Call your global function
+        onBubbleSelected(districtName, bubbleNumber);
+
+        // ✨ Keep the existing bubble feedback (scaling + info popup)
+        this.onBubbleClick(bubble.dataset.culture, this.currentDistrict);
+    });
+});
+            },
+            
+            show(clickX, clickY, district) {
+                if (this.isVisible) return;
+                
+                this.currentDistrict = district;
+                this.isVisible = true;
+                
+                // Arrange bubbles near the map center with independent X/Y spacing (elliptical layout)
+                const BW = 160; // bubble width
+                const BH = 160; // bubble height
+                const cx = window.innerWidth * 0.5;
+                const cy = window.innerHeight * 0.5;
+                const rx = window.innerWidth * 0.35;   // horizontal spread (increase to move bubbles further on X)
+                const ry = window.innerHeight * 0.29;  // vertical spread (increase to move bubbles further on Y)
+                const angles = [225, 315, 135, 45].map(deg => deg * Math.PI / 180);
+                const positions = angles.map(a => ({
+                    x: cx + rx * Math.cos(a) - BW/2,
+                    y: cy + ry * Math.sin(a) - BH/2
+                }));
+
+                this.bubbles.forEach((bubble, index) => {
+                    setTimeout(() => {
+                        const p = positions[index % positions.length];
+                        bubble.style.left = p.x + 'px';
+                        bubble.style.top = p.y + 'px';
+                        bubble.classList.add('show');
+                    }, index * 120);
+                });
+            },
+            
+            hide() {
+                if (!this.isVisible) return;
+                
+                this.isVisible = false;
+                this.currentDistrict = null;
+                
+                this.bubbles.forEach((bubble) => {
+                    bubble.classList.remove('show');
+                });
+            },
+            
+            onBubbleClick(cultureType, district) {
+                console.log(`Cultural aspect "${cultureType}" clicked for district:`, district?.name || 'Unknown');
+                
+                // Create a visual feedback effect
+                const bubble = this.bubbles.find(b => b.dataset.culture === cultureType);
+                if (bubble) {
+                    bubble.style.transform = 'scale(1.3) rotate(0deg)';
+                    setTimeout(() => {
+                        bubble.style.transform = 'scale(1.1) rotate(0deg)';
+                    }, 150);
+                }
+                
+                // Removed cultural info popup as requested
+            },
+            
+            showCulturalInfo(cultureType, district) {
+                const info = {
+                    dance: "Kerala's classical dance forms like Kathakali, Mohiniyattam, and Theyyam showcase rich storytelling traditions.",
+                    music: "Carnatic music and traditional folk songs resonate through Kerala's cultural landscape.",
+                    food: "From spicy curries to coconut-based delicacies, Kerala cuisine reflects its coastal heritage.",
+                    art: "Traditional art forms include mural paintings, wood carvings, and intricate metalwork."
+                };
+                
+                // Show a temporary notification
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(212,165,116,.9);
+                    color: #3E2723;
+                    padding: 15px 20px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(62,39,35,.35);
+                    backdrop-filter: blur(10px);
+                    box-shadow: 0 10px 30px rgba(62,39,35,.25);
+                    max-width: 300px;
+                    font-size: 13px;
+                    line-height: 1.4;
+                    z-index: 10000;
+                    transform: translateX(100%);
+                    transition: transform 0.3s ease;
+                `;
+                notification.textContent = info[cultureType] || 'Cultural information not available.';
+                
+                document.body.appendChild(notification);
+                
+                // Animate in
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                }, 10);
+                
+                // Remove after 4 seconds
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 4000);
+            }
+        };
+
+        // Global function to open trip planner
+        function openTripPlanner() {
+            // Get district name from the focused district
+            let districtName = 'Unknown';
+            if (focusedGroup && pinSystem.nameMap) {
+                // Try to find the district name
+                const getIdFromName = (name) => {
+                    const mm = (name || '').match(/(\d{1,3})/);
+                    return mm ? mm[1].padStart(3, '0') : null;
+                };
+                
+                let id = getIdFromName(focusedGroup.name);
+                if (id && pinSystem.nameMap[id]) {
+                    districtName = pinSystem.nameMap[id];
+                } else if (pinSystem.nameMap['district']) {
+                    districtName = pinSystem.nameMap['district'];
+                }
+            }
+            
+            // Open trip planner with district pre-selected
+            const url = `trip-planner.html?district=${encodeURIComponent(districtName)}`;
+            window.open(url, '_blank');
+            // Hide the Plan My Trip button after opening per request
+            if (typeof hidePlanTripButton === 'function') {
+                hidePlanTripButton();
+            }
+        }
+
+        // Show/hide Plan My Trip button
+        function showPlanTripButton(district) {
+            const btn = document.getElementById('planTripBtn');
+            if (btn) {
+                btn.style.display = 'block';
+                setTimeout(() => {
+                    btn.classList.add('show');
+                }, 100);
+            }
+        }
+
+        function hidePlanTripButton() {
+            const btn = document.getElementById('planTripBtn');
+            if (btn) {
+                btn.classList.remove('show');
+                setTimeout(() => {
+                    btn.style.display = 'none';
+                }, 400);
+            }
+        }
+
+        // Helper: get top-level district node (direct child of the model)
+        function getTopDistrict(obj) {
+            let n = obj;
+            let last = obj;
+            while (n && n.parent && n.parent !== model) {
+                last = n;
+                n = n.parent;
+            }
+            // If we reached a direct child of model, use it; otherwise fall back to the exact mesh hit
+            if (n && n.parent === model) return n;
+            return last || obj;
+        }
+
+        // Outline highlight using EdgesGeometry
+        function setOutline(meshOrGroup, on) {
+            meshOrGroup.traverse((n) => {
+                if (!n.isMesh) return;
+                if (on) {
+                    if (!n.userData._outline) {
+                        const geom = new THREE.EdgesGeometry(n.geometry, 1);
+                        const mat = new THREE.LineBasicMaterial({ color: 0x3E2723, depthTest: false, transparent: true, opacity: 1 });
+                        const lines = new THREE.LineSegments(geom, mat);
+                        lines.position.set(0, 0, 0);
+                        lines.rotation.set(0, 0, 0);
+                        lines.scale.set(1, 1, 1);
+                        n.add(lines);
+                        n.userData._outline = lines;
+                    }
+                    n.userData._outline.visible = true;
+                } else if (n.userData._outline) {
+                    n.userData._outline.visible = false;
+                }
+            });
+        }
+
+        // Bring a district visually to the front by disabling depthTest and raising renderOrder
+        function setDepthOnTop(meshOrGroup, on) {
+            meshOrGroup.traverse((n) => {
+                if (!n.isMesh) return;
+                if (on) {
+                    if (n.material) {
+                        if (!n.userData._prevDepthTest) n.userData._prevDepthTest = n.material.depthTest;
+                        n.material.depthTest = false;
+                        n.renderOrder = 9999;
+                    }
+                } else {
+                    if (n.material && n.userData._prevDepthTest !== undefined) {
+                        n.material.depthTest = n.userData._prevDepthTest;
+                    }
+                    n.renderOrder = 0;
+                }
+            });
+        }
+
+        function ensureAnimNode(node) {
+            if (node.userData.baseY === undefined) node.userData.baseY = node.position.y;
+            if (node.userData.targetY === undefined) node.userData.targetY = node.position.y;
+            if (node.userData.baseScale === undefined) node.userData.baseScale = node.scale.x || 1;
+            if (node.userData.targetScale === undefined) node.userData.targetScale = node.userData.baseScale;
+            animNodes.add(node);
+        }
+
+        // -------- Overlay animation data --------
+        const center = { get x(){ return window.innerWidth/2 }, get y(){ return window.innerHeight/2 } };
+        // Menu particles
+        const MENU_COUNT = 40;
+        const menu = [];
+        function resetMenuParticle(p){
+            p.x = Math.random() * window.innerWidth;
+            p.y = Math.random() * window.innerHeight;
+            p.vx = (Math.random()-0.5) * 0.15;
+            p.vy = (Math.random()-0.5) * 0.15;
+            p.r = 1.2 + Math.random()*1.4;
+        }
+        for(let i=0;i<MENU_COUNT;i++){ menu.push({}); resetMenuParticle(menu[i]); }
+        // Diamonds
+        const DIAMONDS = Array.from({length:6}, (_,i)=>({phase:i/6, r: 90}));
+        // Ring phases for expanding rings and wave dots
+        const RINGS = [0, 0.25, 0.5, 0.75];
+
+        // Activate a hovered district after the delay
+        function activateHoverTarget(target) {
+            if (!target) return;
+            ensureAnimNode(target);
+            target.userData.targetY = target.userData.baseY + LIFT_HEIGHT;
+            target.userData.targetScale = (target.userData.baseScale || 1) * 1.04; // subtle pop
+            setOutline(target, true);
+            setDepthOnTop(target, true);
+            hoveredDistrict = target;
+            document.body.style.cursor = 'pointer';
+        }
+
+        // Reset all district groups to base (optionally instantly), except an optional target
+        function resetAllGroups(except = null, instant = false) {
+            if (!districtGroups || districtGroups.length === 0) return;
+            districtGroups.forEach((g) => {
+                if (except && g === except) return;
+                ensureAnimNode(g);
+                g.userData.targetY = g.userData.baseY;
+                g.userData.targetScale = g.userData.baseScale || 1;
+                setOutline(g, false);
+                setDepthOnTop(g, false);
+                if (instant) {
+                    g.position.y = g.userData.baseY;
+                    const s = g.userData.baseScale || 1;
+                    g.scale.set(s, s, s);
+                }
+            });
+        }
+
+        // Auto-orient the model so it's facing the camera (flat in XY) and upright (long axis = Y)
+        function autoOrientFrontUpright(root) {
+            // Iteratively make Z the thinnest axis (so geometry lies in XY plane)
+            for (let i = 0; i < 3; i++) {
+                const box = new THREE.Box3().setFromObject(root);
+                const size = box.getSize(new THREE.Vector3());
+                // If Z already the thinnest, stop
+                if (size.z <= size.x && size.z <= size.y) break;
+                // Rotate so the currently smallest of X/Y becomes Z
+                if (size.x <= size.y) {
+                    // Map X -> Z
+                    root.rotation.y += Math.PI / 2;
+                } else {
+                    // Map Y -> Z
+                    root.rotation.x += -Math.PI / 2;
+                }
+            }
+
+            // Now make the longest axis vertical (Y)
+            let box = new THREE.Box3().setFromObject(root);
+            let size = box.getSize(new THREE.Vector3());
+            if (size.x > size.y && size.x >= size.z) {
+                // Rotate around Z so X becomes Y
+                root.rotation.z += Math.PI / 2;
+            }
+        }
+
+        // Camera animation state for smooth pan/zoom to a district
+        const camAnim = {
+            active: false,
+            startTime: 0,
+            duration: 1000, // ms
+            fromPos: new THREE.Vector3(),
+            toPos: new THREE.Vector3(),
+            fromTarget: new THREE.Vector3(),
+            toTarget: new THREE.Vector3(),
+            easing: 'inOutCubic', // 'inOutCubic' | 'outCubic'
+        };
+
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        // Smoothly center and zoom into a district like Google Earth
+        function focusDistrict(target) {
+            if (!target) return;
+            // Compute world-space bounding box of the target
+            const box = new THREE.Box3().setFromObject(target);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            // Compute distance needed to frame the box in front view
+            const fovV = THREE.MathUtils.degToRad(camera.fov);
+            const fovH = 2 * Math.atan(Math.tan(fovV / 2) * camera.aspect);
+            const distV = (size.y / 2) / Math.tan(fovV / 2);
+            const distH = (size.x / 2) / Math.tan(fovH / 2);
+            const dist = Math.max(distH, distV) * 0.85 + size.z * 0.5; // tighter, closer view
+
+            // Mark focused state and flatten all hover visuals immediately
+            isFocused = true;
+            focusedGroup = target;
+            if (hoverIntentTimer) { clearTimeout(hoverIntentTimer); hoverIntentTimer = null; }
+            hoverIntentTarget = null;
+            resetAllGroups(null, true);
+            hoveredDistrict = null;
+            document.body.style.cursor = 'default';
+
+            // Cancel any pending start, then delay-start the camera landing
+            if (pendingFocusTimer) { clearTimeout(pendingFocusTimer); pendingFocusTimer = null; }
+            pendingFocusTimer = setTimeout(() => {
+                // Set animation endpoints
+                camAnim.fromPos.copy(camera.position);
+                camAnim.toPos.set(center.x, center.y, center.z + dist);
+                camAnim.fromTarget.copy(controls.target);
+                camAnim.toTarget.copy(center);
+                camAnim.startTime = performance.now();
+                camAnim.duration = FOCUS_DURATION_MS;
+                camAnim.easing = 'outCubic'; // smooth ease-out "landing"
+                camAnim.active = true;
+
+                // Adjust clipping planes for new distance
+                camera.near = Math.max(0.1, dist / 100);
+                camera.far = Math.max(camera.far, dist * 100);
+                camera.updateProjectionMatrix();
+                pendingFocusTimer = null;
+            }, FOCUS_DELAY_MS);
+        }
+
+        // Animate back to the home/original view
+        function focusHome() {
+            // Reset buttons to inactive state
+            learn_btn.disabled = true;
+            quiz_btn.disabled = true;
+            learn_btn.style.opacity = 0;
+            quiz_btn.style.opacity = 0;
+            
+            // Clear preview text
+            const previewElement = document.getElementsByClassName("preview")[0];
+            if (previewElement) {
+                previewElement.innerText = "";
+            }
+            
+            // Remove any existing cultural info notifications/popups
+            const existingNotifications = document.querySelectorAll('div[style*="position: fixed"][style*="top: 20px"][style*="right: 20px"]');
+            existingNotifications.forEach(notification => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            });
+            
+            // Reset selected activity
+            selectedActivity = null;
+            
+            // Cancel any pending focus start
+            if (pendingFocusTimer) { clearTimeout(pendingFocusTimer); pendingFocusTimer = null; }
+            isFocused = false;
+            focusedGroup = null;
+            // Hide cultural bubbles when returning home
+            culturalBubbles.hide();
+            // Ensure all districts are flattened when returning home
+            resetAllGroups(null, true);
+            hoveredDistrict = null;
+            document.body.style.cursor = 'default';
+            camAnim.fromPos.copy(camera.position);
+            camAnim.toPos.copy(HOME.pos);
+            camAnim.fromTarget.copy(controls.target);
+            camAnim.toTarget.copy(HOME.target);
+            camAnim.startTime = performance.now();
+            camAnim.duration = 900;
+            camAnim.easing = 'outCubic';
+            camAnim.active = true;
+        }
+
+        // Load the GLB model (place kerala_map.glb next to this HTML or update the path)
+        const loader = new THREE.GLTFLoader();
+        loader.load('/static/kerala_map.glb', function (gltf) {
+            model = gltf.scene;
+            scene.add(model);
+
+            // Collect district meshes for raycasting and build top-level district groups
+            const rootsSet = new Set();
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    districts.push(child);
+                    
+                    // Change district colors to light brown with dark coffee brown borders
+                    if (child.material) {
+                        // Create new material with light brown color
+                        const newMaterial = child.material.clone();
+                        newMaterial.color.setHex(0xD4A574); // Light brown color
+                        newMaterial.transparent = true;
+                        newMaterial.opacity = 0; // start transparent for fade-in
+                        child.material = newMaterial;
+                        // Track for fade animation
+                        districtMats.push({ mat: newMaterial, target: 0.9 });
+                        
+                        // Add permanent dark brown outline to each district
+                        const geom = new THREE.EdgesGeometry(child.geometry, 1);
+                        const mat = new THREE.LineBasicMaterial({ 
+                            color: 0x3E2723, // Dark coffee brown
+                            linewidth: 2,
+                            transparent: true, 
+                            opacity: 0 // start transparent for fade-in
+                        });
+                        const lines = new THREE.LineSegments(geom, mat);
+                        child.add(lines);
+                        child.userData._permanentOutline = lines;
+                        // Track for fade animation
+                        lineMats.push({ mat, target: 1 });
+                    }
+                    
+                    const root = getTopDistrict(child);
+                    rootsSet.add(root);
+                    // Initialize group base state once
+                    if (!root.userData._initBase) {
+                        root.userData.baseY = root.position.y;
+                        root.userData.targetY = root.position.y;
+                        root.userData.baseScale = root.scale.x || 1;
+                        root.userData.targetScale = root.userData.baseScale;
+                        root.userData._initBase = true;
+                    }
+                }
+            });
+            districtGroups = Array.from(rootsSet);
+            // Make sure nothing is raised initially
+            resetAllGroups(null, true);
+            hoveredDistrict = null;
+
+            // Orient to vertical and front-facing
+            autoOrientFrontUpright(model);
+            // Match reference: slight left tilt and coastline on left
+            const LEFT_TILT = -Math.PI / 6; // ~ -30°
+            model.rotation.z += LEFT_TILT;
+            model.rotation.y += Math.PI; // horizontal mirror
+            // Invert upside down
+            model.rotation.z += Math.PI;
+
+            // Compute bounds after orientation
+            let box = new THREE.Box3().setFromObject(model);
+            let size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const center = box.getCenter(new THREE.Vector3());
+
+            // Center the model at origin
+            model.position.sub(center);
+
+            // Position camera to frame the model
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs((maxDim / 2) / Math.tan(fov / 2));
+            cameraZ *= 1.4; // add a little extra distance
+            camera.position.set(0, 0, cameraZ);
+            camera.near = Math.max(0.1, cameraZ / 100);
+            camera.far = cameraZ * 100;
+            camera.updateProjectionMatrix();
+            controls.target.set(0, 0, 0);
+            // Constrain zoom distances for better control
+            controls.minDistance = Math.max(0.1, maxDim * 0.6);
+            controls.maxDistance = maxDim * 6;
+            controls.update();
+
+            // Save home view
+            HOME.set(camera.position, controls.target);
+
+            // Scale lift height to model size
+            LIFT_HEIGHT = Math.max(maxDim * 0.04, maxDim * 0.02);
+            // Subtle scene fog for depth and to blend particles
+            scene.fog = new THREE.Fog(0x051521, cameraZ*0.9, cameraZ*3.5);
+            // Create particle background behind the map
+            createBackgroundParticles(maxDim);
+            // Create stylish animations for main webpage
+            createStylishAnimations(maxDim);
+            // Initialize cultural bubbles system
+            culturalBubbles.init();
+            // Init district pins
+            pinSystem.init(districtGroups);
+            // Defer reveal to parent (landing page) via postMessage, with a fallback
+            const containerEl = document.getElementById('container');
+            // Show back button as part of background reveal
+            function beginBackgroundReveal(){
+                if (containerEl) {
+                    containerEl.style.opacity = '1';
+                    containerEl.style.transform = 'translateY(0)';
+                }
+                if (bgFadeStart === null) bgFadeStart = performance.now();
+                // HUD + hint entrance
+                document.querySelector('.hud')?.classList.add('show');
+                setTimeout(()=>document.querySelector('.hint')?.classList.add('show'), 250);
+                document.getElementById('back-to-landing')?.classList.add('show');
+            }
+            function beginModelReveal(){
+                if (modelFadeStart === null) modelFadeStart = performance.now();
+            }
+            // Listen for parent triggers
+            window.addEventListener('message', (e)=>{
+                const data = e.data || {};
+                if (data.type === 'kerala:startReveal') beginBackgroundReveal();
+                if (data.type === 'kerala:revealKerala') beginModelReveal();
+            });
+            // Fallback if no message is received
+            // Start background ~1.2s after load, then model ~2.0s after background
+            // Ensures Kerala map appears only after ~3.2s if parent messaging doesn't arrive
+            setTimeout(()=>{
+                if (bgFadeStart === null) beginBackgroundReveal();
+                setTimeout(()=>beginModelReveal(), 2000);
+            }, 1200);
+        }, undefined, function (error) {
+            console.error('Error loading GLB:', error);
+        });
+
+        // Mouse move event for hover detection
+        window.addEventListener('mousemove', (event) => {
+            if (isFocused) {
+                // While focused, ignore hover interactions
+                return;
+            }
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(districts, true);
+            if (intersects.length > 0) {
+                const target = getTopDistrict(intersects[0].object);
+                if (target !== hoveredDistrict) {
+                    // Cancel any pending intent and lift immediately
+                    if (hoverIntentTimer) { clearTimeout(hoverIntentTimer); hoverIntentTimer = null; }
+                    hoverIntentTarget = null;
+                    resetAllGroups(null, true);
+                    activateHoverTarget(target); // instant start
+                }
+            } else {
+                // No hover: cancel intent and flatten all instantly
+                if (hoverIntentTimer) { clearTimeout(hoverIntentTimer); hoverIntentTimer = null; }
+                hoverIntentTarget = null;
+                resetAllGroups(null, true);
+                hoveredDistrict = null;
+                document.body.style.cursor = 'default';
+            }
+        });
+
+        // Click to pan/zoom into district
+        window.addEventListener('click', (event) => {
+            // Convert to NDC
+            const ndc = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+            raycaster.setFromCamera(ndc, camera);
+            const intersects = raycaster.intersectObjects(districts, true);
+            // While focused, block switching to another district. Only background click resets.
+            if (isFocused) {
+                if (intersects.length === 0) {
+                    culturalBubbles.hide();
+                    culturalBubbles.pendingShow = null;
+                    hidePlanTripButton();
+                    if (pendingFocusTimer) { clearTimeout(pendingFocusTimer); pendingFocusTimer = null; }
+                    focusHome();
+                }
+                return;
+            }
+            if (intersects.length > 0) {
+                const target = getTopDistrict(intersects[0].object);
+                
+                // Store click position and district for later bubble display
+                culturalBubbles.pendingShow = {
+                    clickX: event.clientX,
+                    clickY: event.clientY,
+                    district: target
+                };
+                
+                // Load images for the clicked district
+                loadBubbleImages(target.name);
+                
+                // Focus on the district first - bubbles will appear after animation
+                focusDistrict(target);
+                
+                // Show Plan My Trip button
+                showPlanTripButton(target);
+            } else {
+                // Clicked outside the map: hide bubbles and return to home view
+                culturalBubbles.hide();
+                culturalBubbles.pendingShow = null;
+                hidePlanTripButton();
+                if (pendingFocusTimer) { clearTimeout(pendingFocusTimer); pendingFocusTimer = null; }
+                focusHome();
+            }
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            const nowSec = performance.now()*0.001;
+            const dt = Math.min(0.05, nowSec - lastTimeSec);
+            lastTimeSec = nowSec;
+
+            // Stage 1: background particles fade-in
+            if (bgFadeStart !== null) {
+                const e = Math.min(1, (performance.now() - bgFadeStart) / BG_FADE_DURATION);
+                const eased = easeOutCubic(e);
+                if (bgPointsFar && bgPointsFar.material) {
+                    const tgt = bgPointsFar.material.userData?.targetOpacity ?? 0.16;
+                    bgPointsFar.material.opacity = tgt * eased;
+                }
+                if (bgPointsNear && bgPointsNear.material) {
+                    const tgt = bgPointsNear.material.userData?.targetOpacity ?? 0.45;
+                    bgPointsNear.material.opacity = tgt * eased;
+                }
+                if (e >= 1) bgFadeStart = null;
+            }
+
+            // Stage 2: Kerala model + outlines fade-in (with subtle scale-up)
+            if (modelFadeStart !== null) {
+                const e2 = Math.min(1, (performance.now() - modelFadeStart) / MODEL_FADE_DURATION);
+                const eased2 = easeOutCubic(e2);
+                districtMats.forEach(o => { if (o.mat) o.mat.opacity = o.target * eased2; });
+                lineMats.forEach(o => { if (o.mat) o.mat.opacity = o.target * eased2; });
+                // Synchronized fade-in of district pins overlay
+                if (pinSystem.container) {
+                    pinSystem.container.style.opacity = String(eased2);
+                }
+                if (model) {
+                    const s0 = 0.985; // start slightly smaller for a flowing pop-in
+                    const s = s0 + (1 - s0) * eased2;
+                    model.scale.set(s, s, s);
+                }
+                if (e2 >= 1) modelFadeStart = null;
+            }
+
+            // Smoothly move any nodes we flagged
+            animNodes.forEach((n) => {
+                const ty = n.userData.targetY;
+                if (ty !== undefined) {
+                    n.position.y += (ty - n.position.y) * LERP_FACTOR;
+                }
+                const ts = n.userData.targetScale;
+                if (ts !== undefined) {
+                    const sx = n.scale.x + (ts - n.scale.x) * LERP_FACTOR;
+                    const sy = n.scale.y + (ts - n.scale.y) * LERP_FACTOR;
+                    const sz = n.scale.z + (ts - n.scale.z) * LERP_FACTOR;
+                    n.scale.set(sx, sy, sz);
+                }
+            });
+
+            // Camera animation update
+            if (camAnim.active) {
+                const now = performance.now();
+                const t = Math.min(1, (now - camAnim.startTime) / camAnim.duration);
+                const e = camAnim.easing === 'outCubic' ? easeOutCubic(t) : easeInOutCubic(t);
+                camera.position.lerpVectors(camAnim.fromPos, camAnim.toPos, e);
+                controls.target.lerpVectors(camAnim.fromTarget, camAnim.toTarget, e);
+                if (t >= 1) {
+                    camAnim.active = false;
+                    // Show cultural bubbles after camera animation completes
+                    if (culturalBubbles.pendingShow) {
+                        const pending = culturalBubbles.pendingShow;
+                        culturalBubbles.pendingShow = null;
+                        // Small delay to let camera settle
+                        setTimeout(() => {
+                            culturalBubbles.show(pending.clickX, pending.clickY, pending.district);
+                        }, 300);
+                    }
+                }
+            }
+
+            // Background and stylish animation updates
+            updateBackgroundParticles(nowSec);
+            updateStylishAnimations(nowSec);
+            pinSystem.update();
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Enhanced keyboard shortcuts
+        function onKeyDown(event) {
+            switch (event.key) {
+                case 'r':
+                case 'R':
+                    // Reset view and hide bubbles
+                    culturalBubbles.hide();
+                    focusHome();
+                    break;
+                case 'f':
+                case 'F':
+                    // Toggle fullscreen
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen();
+                    } else {
+                        document.exitFullscreen();
+                    }
+                    break;
+            }
+        }
+
+        window.addEventListener('keydown', onKeyDown);
+
+        // Back button -> notify parent to scroll back to landing
+        const backBtn = document.getElementById('back-to-landing');
+        if (backBtn) backBtn.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            if (window.parent) {
+                window.parent.postMessage({ type: 'kerala:backToLanding' }, '*');
+            }
+        });
+
+        // Scroll-down button: scroll one viewport down or notify parent
+        (function(){
+            const downBtn = document.getElementById('scroll-down');
+            if (!downBtn) return;
+            downBtn.addEventListener('click', (e)=>{
+                e.preventDefault();
+                e.stopPropagation();
+                try {
+                    if (window.parent) {
+                        window.parent.postMessage({ type: 'kerala:wheel', dy: window.innerHeight }, '*');
+                        window.parent.postMessage({ type: 'kerala:scrollDown' }, '*');
+                    }
+                } catch(_) {}
+                try {
+                    window.scrollBy({ top: window.innerHeight, left: 0, behavior: 'smooth' });
+                } catch(_) {
+                    window.scrollBy(0, window.innerHeight);
+                }
+            });
+        })();
+
+        // Smooth transition to slider.html (delegated clicks + postMessage API)
+        (function(){
+            const NAV_FADE_MS = 800;
+            function navigateWithFade(url){
+                document.body.classList.add('page-fade-out');
+                setTimeout(()=>{ window.location.href = url; }, NAV_FADE_MS);
+            }
+            // Intercept anchor clicks to slider.html
+            document.addEventListener('click', (e)=>{
+                const a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!a) return;
+                const href = a.getAttribute('href') || '';
+                if (/slider\.html(?:$|[?#])/i.test(href)){
+                    e.preventDefault();
+                    e.stopPropagation();
+                    navigateWithFade(href);
+                }
+            }, true);
+            // Allow parent or other scripts to request navigation
+            window.addEventListener('message', (e)=>{
+                const data = e.data || {};
+                if (data.type === 'kerala:navigateToSlider') navigateWithFade('slider.html');
+            });
+            // Optional: expose helper
+            window.navigateToSliderWithFade = () => navigateWithFade('slider.html');
+        })();
+
+        // Bridge wheel/touch scroll from iframe to parent so only the whole page scrolls
+        (function(){
+            let touchStartY = null;
+            // Wheel -> post to parent and prevent default
+            window.addEventListener('wheel', (e)=>{
+                try {
+                    if (window.parent) {
+                        window.parent.postMessage({ type: 'kerala:wheel', dy: e.deltaY }, '*');
+                    }
+                    e.preventDefault();
+                } catch(_){}
+            }, { passive: false });
+            // Touch drag -> compute deltaY and post
+            window.addEventListener('touchstart', (e)=>{
+                if (e.touches && e.touches.length) touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+            window.addEventListener('touchmove', (e)=>{
+                if (touchStartY == null) return;
+                const y = e.touches && e.touches.length ? e.touches[0].clientY : touchStartY;
+                const dy = touchStartY - y; // positive means swipe up (scroll down)
+                try {
+                    if (window.parent) {
+                        window.parent.postMessage({ type: 'kerala:wheel', dy }, '*');
+                    }
+                    e.preventDefault();
+                } catch(_){}
+            }, { passive: false });
+            window.addEventListener('touchend', ()=>{ touchStartY = null; }, { passive: true });
+        })();
+
+        // Smooth cursor trail effect
+        class CursorTrail {
+            constructor() {
+                this.points = [];
+                this.canvas = document.createElement('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.canvas.style.position = 'fixed';
+                this.canvas.style.top = '0';
+                this.canvas.style.left = '0';
+                this.canvas.style.pointerEvents = 'none';
+                this.canvas.style.zIndex = '999';
+                document.body.appendChild(this.canvas);
+                
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                window.addEventListener('mousemove', (e) => this.addPoint(e.clientX, e.clientY));
+                
+                this.animate();
+            }
+            
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+            
+            addPoint(x, y) {
+                this.points.push({ x, y, age: 0 });
+                if (this.points.length > 20) {
+                    this.points.shift();
+                }
+            }
+            
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                for (let i = 0; i < this.points.length; i++) {
+                    const point = this.points[i];
+                    point.age++;
+                    
+                    const alpha = Math.max(0, 1 - point.age / 20);
+                    const size = 3 * alpha;
+                    
+                    this.ctx.beginPath();
+                    this.ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(62, 39, 35, ${alpha * 0.6})`;
+                    this.ctx.fill();
+                }
+                
+                this.points = this.points.filter(p => p.age < 20);
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize cursor trail on desktop
+        if (!('ontouchstart' in window)) {
+            new CursorTrail();
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        });
+
+        console.log('🚀 Kerala 3D Map with Cultural Bubbles loaded successfully!');
+        console.log('💡 Features:');
+        console.log('   • Interactive 3D districts with cultural bubbles');
+        console.log('   • Smooth camera animations');
+        console.log('   • Background particle effects');
+        console.log('   • Keyboard shortcuts (R: reset, F: fullscreen)');
+    </script>
+    <script>
+        // Extra guard: remove Webflow badge if injected after load
+        (function(){
+            const hide = () => {
+                document.querySelectorAll('.w-webflow-badge').forEach(el => { el.style.display='none'; el.style.visibility='hidden'; el.style.pointerEvents='none'; });
+                document.querySelectorAll('a[href*="webflow.com"], a[href*="webflow.io"]').forEach(a => {
+                    if (/webflow/i.test(a.textContent) || a.classList.contains('w-webflow-badge')) {
+                        a.style.display='none'; a.style.visibility='hidden'; a.style.pointerEvents='none';
+                    }
+                });
+            };
+            hide();
+            window.addEventListener('load', hide, { once: true });
+            const mo = new MutationObserver(hide);
+            mo.observe(document.documentElement, { childList: true, subtree: true });
+        })();
+
+        function onBubbleSelected(districtName, bubbleNumber) {
+        const nameMap = {
+                'district': 'Alappuzha',
+                'district004': 'Kasargod',
+                'district003': 'Kannur',
+                'district013': 'Wayanad',
+                'district007': 'Kozhikode',
+                'district008': 'Malappuram',
+                'district009': 'Palakkad',
+                'district012': 'Thrissur',
+                'district001': 'Ernakulam',
+                'district002': 'Idukki',
+                'district006': 'Kottayam',
+                'district014': 'Alappuzha',
+                'district010': 'Pathanamthitta',
+                'district005': 'Kollam',
+                'district011': 'Thiruvananthapuram'
+            }
+
+    districtName = nameMap[districtName];
+    bubbleNumber--;
+    console.log(`✅ Bubble clicked - District: ${districtName}, Number: ${bubbleNumber}`);
+
+}
+
+    </script>
+</body>
+</html>
